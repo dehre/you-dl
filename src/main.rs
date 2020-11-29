@@ -19,9 +19,21 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     for link in links {
         let youtube_dl_output = format!("{}/%(title)s.%(ext)s", config.output_directory);
-        process::Command::new("youtube-dl")
+        let output = process::Command::new("youtube-dl")
             .args(&["-f", "mp4", "-o", &youtube_dl_output, link])
             .output()?;
+
+        if !output.status.success() {
+            eprintln!("Failed to download: {}", link);
+            continue;
+        }
+
+        let raw_title = process::Command::new("youtube-dl")
+            .args(&["--get-title", link])
+            .output()?
+            .stdout;
+        let title = String::from_utf8(raw_title)?;
+        println!("Successfully downloaded: {}", title.trim());
     }
 
     Ok(())
