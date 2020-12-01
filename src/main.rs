@@ -2,6 +2,7 @@ use smol::process as smol_process;
 use std::env;
 use std::error::Error;
 use std::fs;
+use std::io;
 use std::process;
 
 #[derive(Debug)]
@@ -47,8 +48,7 @@ fn parse_config_from_env() -> Config {
     }
 }
 
-// TODO LORIS: return Result<(), Box<dyn Error>> ?
-async fn download_video(link: String, output_directory: String) {
+async fn download_video(link: String, output_directory: String) -> Result<(), io::Error> {
     println!("START DOWNLOADING");
     let youtube_dl_output = format!("{}/%(title)s.%(ext)s", output_directory);
     let output = smol_process::Command::new("youtube-dl")
@@ -58,8 +58,9 @@ async fn download_video(link: String, output_directory: String) {
         .unwrap();
 
     if !output.status.success() {
+        // TODO LORIS
         eprintln!("Failed to download: {}", link);
-        return;
+        return Ok(());
     }
 
     let raw_title = smol_process::Command::new("youtube-dl")
@@ -70,6 +71,8 @@ async fn download_video(link: String, output_directory: String) {
         .stdout;
     let title = String::from_utf8(raw_title).unwrap();
     println!("Successfully downloaded: {}", title.trim());
+
+    Ok(())
 }
 
 // OUTLINE:
