@@ -1,3 +1,4 @@
+use smol::process as smol_process;
 use std::env;
 use std::error::Error;
 use std::fs;
@@ -11,30 +12,24 @@ struct Config {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let config = parse_config_from_env();
-    let str_links = fs::read_to_string(config.input_file)?;
+    let str_links = fs::read_to_string(&config.input_file)?;
     let links = str_links
         .lines()
         .filter(|&l| !l.trim().is_empty())
         .collect::<Vec<&str>>();
 
-    for link in links {
-        let youtube_dl_output = format!("{}/%(title)s.%(ext)s", config.output_directory);
-        let output = process::Command::new("youtube-dl")
-            .args(&["-f", "mp4", "-o", &youtube_dl_output, link])
-            .output()?;
-
-        if !output.status.success() {
-            eprintln!("Failed to download: {}", link);
-            continue;
-        }
-
-        let raw_title = process::Command::new("youtube-dl")
-            .args(&["--get-title", link])
-            .output()?
-            .stdout;
-        let title = String::from_utf8(raw_title)?;
-        println!("Successfully downloaded: {}", title.trim());
-    }
+    smol::block_on(async move {
+        let smol_tasks: Vec<_> = links
+            .iter()
+            .map(|&link| {
+                smol::spawn(download_video(
+                    String::from(link),
+                    config.output_directory.clone(),
+                ))
+            })
+            .collect();
+        futures::future::join_all(smol_tasks).await;
+    });
 
     Ok(())
 }
@@ -50,6 +45,31 @@ fn parse_config_from_env() -> Config {
         input_file: args.remove(1),
         output_directory: args.remove(1),
     }
+}
+
+// TODO LORIS: return Result<(), Box<dyn Error>> ?
+async fn download_video(link: String, output_directory: String) {
+    println!("START DOWNLOADING");
+    let youtube_dl_output = format!("{}/%(title)s.%(ext)s", output_directory);
+    let output = smol_process::Command::new("youtube-dl")
+        .args(&["-f", "mp4", "-o", &youtube_dl_output, &link])
+        .output()
+        .await
+        .unwrap();
+
+    if !output.status.success() {
+        eprintln!("Failed to download: {}", link);
+        return;
+    }
+
+    let raw_title = smol_process::Command::new("youtube-dl")
+        .args(&["--get-title", &link])
+        .output()
+        .await
+        .unwrap()
+        .stdout;
+    let title = String::from_utf8(raw_title).unwrap();
+    println!("Successfully downloaded: {}", title.trim());
 }
 
 // OUTLINE:
