@@ -54,8 +54,7 @@ async fn download_video(link: String, output_directory: String) -> Result<(), io
     let output = smol_process::Command::new("youtube-dl")
         .args(&["-f", "mp4", "-o", &youtube_dl_output, &link])
         .output()
-        .await
-        .unwrap();
+        .await?;
 
     if !output.status.success() {
         // TODO LORIS
@@ -66,8 +65,7 @@ async fn download_video(link: String, output_directory: String) -> Result<(), io
     let raw_title = smol_process::Command::new("youtube-dl")
         .args(&["--get-title", &link])
         .output()
-        .await
-        .unwrap()
+        .await?
         .stdout;
     let title = String::from_utf8(raw_title).unwrap();
     println!("Successfully downloaded: {}", title.trim());
