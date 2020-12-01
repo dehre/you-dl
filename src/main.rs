@@ -1,77 +1,63 @@
-use smol::process as smol_process;
-use std::env;
+use smol::fs;
+use smol::process;
 use std::error::Error;
-use std::fs;
 use std::io;
-use std::process;
+mod config;
 
-#[derive(Debug)]
-struct Config {
-    input_file: String,
-    output_directory: String,
+fn main() {
+    if let Err(e) = smol::block_on(async_main()) {
+        eprintln!("Application error: {}", e);
+        std::process::exit(1);
+    }
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
-    let config = parse_config_from_env();
-    let str_links = fs::read_to_string(&config.input_file)?;
-    let links = str_links
+async fn async_main() -> Result<(), Box<dyn Error>> {
+    let config = config::parse_from_env()?;
+    let str_links = fs::read_to_string(&config.input_file).await?;
+    let links: Vec<&str> = str_links
         .lines()
         .filter(|&l| !l.trim().is_empty())
-        .collect::<Vec<&str>>();
+        .collect();
 
-    smol::block_on(async move {
-        let smol_tasks: Vec<_> = links
-            .iter()
-            .map(|&link| {
-                smol::spawn(download_video(
-                    String::from(link),
-                    config.output_directory.clone(),
-                ))
-            })
-            .collect();
-        // TODO LORIS: handle results
-        futures::future::join_all(smol_tasks).await;
-    });
+    let smol_tasks: Vec<_> = links
+        .iter()
+        .map(|&link| {
+            smol::spawn(download_video(
+                String::from(link),
+                config.output_directory.clone(),
+            ))
+        })
+        .collect();
+
+    // TODO LORIS: collect io::Errors here and send them up?
+    futures::future::join_all(smol_tasks).await;
 
     Ok(())
 }
 
-fn parse_config_from_env() -> Config {
-    let mut args: Vec<String> = env::args().collect();
-    if args.len() != 3 {
-        eprintln!("Invalid arguments. Usage: youtube_downloader <input_file> <output_directory>");
-        process::exit(1);
-    }
-
-    Config {
-        input_file: args.remove(1),
-        output_directory: args.remove(1),
-    }
-}
-
+//
+// The function download_video returns an error only if this specific application has an error, not if youtube-dl failed.
+//
 async fn download_video(link: String, output_directory: String) -> Result<(), io::Error> {
     println!("START DOWNLOADING");
     let youtube_dl_output = format!("{}/%(title)s.%(ext)s", output_directory);
-    let output = smol_process::Command::new("youtube-dl")
+    let output = process::Command::new("youtube-dl")
         .args(&["-f", "mp4", "-o", &youtube_dl_output, &link])
         .output()
         .await?;
 
     if !output.status.success() {
-        let e = io::Error::new(
-            io::ErrorKind::Other,
-            format!("Failed to download: {}", link),
-        );
-        return Err(e);
+        eprintln!("Failed to download: {}", link);
+        return Ok(());
     }
 
-    let raw_title = smol_process::Command::new("youtube-dl")
+    let raw_title = process::Command::new("youtube-dl")
         .args(&["--get-title", &link])
         .output()
         .await?
         .stdout;
     let title = String::from_utf8(raw_title).unwrap();
-    println!("Successfully downloaded: {}", title.trim());
+    println!("Successfully downloaded {}", title);
 
     Ok(())
 }
