@@ -29,6 +29,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 ))
             })
             .collect();
+        // TODO LORIS: handle results
         futures::future::join_all(smol_tasks).await;
     });
 
@@ -57,9 +58,11 @@ async fn download_video(link: String, output_directory: String) -> Result<(), io
         .await?;
 
     if !output.status.success() {
-        // TODO LORIS
-        eprintln!("Failed to download: {}", link);
-        return Ok(());
+        let e = io::Error::new(
+            io::ErrorKind::Other,
+            format!("Failed to download: {}", link),
+        );
+        return Err(e);
     }
 
     let raw_title = smol_process::Command::new("youtube-dl")
