@@ -22,7 +22,7 @@ async fn async_main() -> Result<(), Box<dyn Error>> {
     let smol_tasks: Vec<_> = links
         .iter()
         .map(|&link| {
-            smol::spawn(download_video(
+            smol::spawn(process_request(
                 String::from(link),
                 config.output_directory.clone(),
             ))
@@ -35,30 +35,68 @@ async fn async_main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-//
-// The function download_video returns an error only if this specific application has an error, not if youtube-dl failed.
-//
-async fn download_video(link: String, output_directory: String) -> Result<(), io::Error> {
-    println!("START DOWNLOADING");
-    let youtube_dl_output = format!("{}/%(title)s.%(ext)s", output_directory);
-    let output = process::Command::new("youtube-dl")
-        .args(&["-f", "mp4", "-o", &youtube_dl_output, &link])
+async fn process_request(link: String, output_directory: String) -> Result<(), io::Error> {
+    let title = get_title(&link)?;
+    let available_file_formats = get_available_file_formats(&link)?;
+    let chosen_file_format = ask_preferred_file_format(&title, &available_file_formats)?;
+    download_video(&link, &title, &chosen_file_format, &output_directory).await?;
+    Ok(())
+}
+
+fn get_title(link: &str) -> Result<String, io::Error> {
+    let command = std::process::Command::new("youtube-dl")
+        .args(&["--get-title", &link])
+        .output()?;
+    let title = String::from_utf8(command.stdout).unwrap();
+    Ok(String::from(title.trim()))
+}
+
+fn get_available_file_formats(link: &str) -> Result<Vec<String>, io::Error> {
+    let command = std::process::Command::new("youtube-dl")
+        .args(&["-F", &link])
+        .output()?;
+    let stdout = String::from_utf8(command.stdout).unwrap();
+    let available_file_formats = stdout
+        .lines()
+        .filter(|&line| !line.starts_with('['))
+        .map(String::from)
+        .collect();
+    Ok(available_file_formats)
+}
+
+fn ask_preferred_file_format(
+    title: &str,
+    available_file_formats: &[String],
+) -> Result<String, io::Error> {
+    println!("Please choose the preferred file format for {}:", title);
+    println!("\t{}", available_file_formats.join("\n\t"));
+    // TODO LORIS: show some sort of prompt
+    // println!("> ");
+    let mut user_choice = String::new();
+    io::stdin().read_line(&mut user_choice)?;
+    Ok(String::from(user_choice.trim()))
+}
+
+async fn download_video(
+    link: &str,
+    title: &str,
+    format: &str,
+    output_directory: &str,
+) -> Result<(), io::Error> {
+    println!("Start downloading {} with format {}!\n\n", title, format);
+    let file_path = format!("{}/%(title)s.%(ext)s", output_directory);
+    let command = process::Command::new("youtube-dl")
+        .args(&["-f", format, "-o", &file_path, link])
         .output()
         .await?;
 
-    if !output.status.success() {
-        eprintln!("Failed to download: {}", link);
+    if !command.status.success() {
+        let err = String::from_utf8(command.stderr).unwrap();
+        eprintln!("Failed to download {}: {}", title, err);
         return Ok(());
     }
 
-    let raw_title = process::Command::new("youtube-dl")
-        .args(&["--get-title", &link])
-        .output()
-        .await?
-        .stdout;
-    let title = String::from_utf8(raw_title).unwrap();
     println!("Successfully downloaded {}", title);
-
     Ok(())
 }
 
@@ -69,3 +107,4 @@ async fn download_video(link: String, output_directory: String) -> Result<(), io
 // async wait for output?
 // choose each video format before downloading
 // proper cli library?
+// cursor to choose file format?
