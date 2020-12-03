@@ -39,10 +39,10 @@ pub async fn download_video(
     link: &str,
     title: &str,
     format: &str,
-    output_directory: &str,
+    output_dir: &str,
 ) -> Result<(), io::Error> {
     println!("Start downloading {} with format {}!\n\n", title, format);
-    let file_path = format!("{}/%(title)s.%(ext)s", output_directory);
+    let file_path = format!("{}/%(title)s.%(ext)s", output_dir);
     let command = process::Command::new("youtube-dl")
         .args(&["-f", format, "-o", &file_path, link])
         .output()

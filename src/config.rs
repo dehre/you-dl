@@ -1,33 +1,42 @@
-use std::{env, error, fmt};
+use clap::{App, Arg};
+use std::path::PathBuf;
+
+const FROM_FILE_ARG: &str = "from_file";
+const OUTPUT_DIR_ARG: &str = "output_dir";
 
 #[derive(Debug)]
 pub struct Config {
-    pub input_file: String,
-    pub output_directory: String,
+    pub from_file: PathBuf,
+    pub output_dir: PathBuf,
 }
 
-#[derive(Debug)]
-pub struct ParseConfigError;
-
-impl fmt::Display for ParseConfigError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "Invalid arguments. Usage: youtube_downloader <input_file> <output_directory>"
+pub fn parse() -> Config {
+    let matches = App::new("youtube_downloader")
+        .arg(
+            Arg::new(FROM_FILE_ARG)
+                .required(true)
+                .short('f')
+                .long("from-file")
+                .value_name("PATH")
+                .about("File containing URLs to download, one URL per line")
+                .takes_value(true),
         )
+        .arg(
+            Arg::new(OUTPUT_DIR_ARG)
+                .default_value("./")
+                .short('o')
+                .long("output-dir")
+                .value_name("PATH")
+                .about("Output directory")
+                .takes_value(true),
+        )
+        .get_matches();
+
+    let from_file = String::from(matches.value_of(FROM_FILE_ARG).unwrap());
+    let output_dir = String::from(matches.value_of(OUTPUT_DIR_ARG).unwrap());
+
+    Config {
+        from_file: PathBuf::from(from_file),
+        output_dir: PathBuf::from(output_dir),
     }
-}
-
-impl error::Error for ParseConfigError {}
-
-pub fn parse_from_env() -> Result<Config, ParseConfigError> {
-    let mut args: Vec<String> = env::args().collect();
-    if args.len() != 3 {
-        return Err(ParseConfigError);
-    }
-
-    Ok(Config {
-        input_file: args.remove(1),
-        output_directory: args.remove(1),
-    })
 }
