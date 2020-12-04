@@ -36,9 +36,10 @@ async fn async_main() -> Result<(), Box<dyn Error>> {
 }
 
 async fn process_request(link: String, output_dir: String) -> Result<(), io::Error> {
-    let title = you_dl::get_title(&link)?;
-    let available_file_formats = you_dl::get_available_file_formats(&link)?;
-    let chosen_file_format = you_dl::ask_preferred_file_format(&title, &available_file_formats)?;
+    let title = you_dl::get_title(&link).await?;
+    let available_file_formats = you_dl::get_available_file_formats(&link).await?;
+    let chosen_file_format =
+        you_dl::ask_preferred_file_format(&title, &available_file_formats).await?;
     you_dl::download_video(&link, &title, &chosen_file_format, &output_dir).await?;
     Ok(())
 }
@@ -51,3 +52,4 @@ async fn process_request(link: String, output_dir: String) -> Result<(), io::Err
 // choose each video format before downloading
 // proper cli library?
 // cursor to choose file format?
+// allow either --link or --from-file args
