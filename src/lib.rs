@@ -28,25 +28,24 @@ pub async fn get_available_file_formats(link: &str) -> Result<Vec<FileFormat>, E
         .and_then(|s| FileFormat::from_youtube_dl_stdout(&s))
 }
 
-// TODO LORIS: better stdout, as table
 pub async fn ask_preferred_file_format(
     title: &str,
     available_file_formats: &[FileFormat],
 ) -> Result<String, Error> {
     println!("Choose the file format for {}:", title);
-    let chosen_format = loop {
-        let chosen_format_index = Select::new()
-            .items(available_file_formats)
-            .default(1)
-            .interact()?;
+    let chosen_index = Select::new()
+        .items(available_file_formats)
+        .default(1)
+        .interact()?;
 
-        if chosen_format_index != 0 {
-            break available_file_formats[chosen_format_index].code.clone(); // TODO LORIS: error handling, no need to clone
-        }
-        println!("Invalid selection");
-    };
-
-    Ok(chosen_format)
+    available_file_formats
+        .get(chosen_index)
+        .map(|file_format| file_format.code.clone())
+        .ok_or(Error::ApplicationError(format!(
+            "Invalid file format chosen: index {} in len {}",
+            chosen_index,
+            available_file_formats.len()
+        )))
 }
 
 // TODO LORIS: return successful titles and failures instead of printing here

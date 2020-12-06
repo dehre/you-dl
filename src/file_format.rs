@@ -44,7 +44,7 @@ impl fmt::Display for FileFormat {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{}\t{}\t{}\t{}",
+            "{:6}{:8}{:12}{}",
             self.code, self.extension, self.resolution, self.size
         )
     }
