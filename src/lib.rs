@@ -2,63 +2,54 @@ use dialoguer::Select;
 use smol::process;
 
 mod error;
+mod file_format;
 pub use error::Error;
+use file_format::FileFormat;
 
 pub async fn get_title(link: &str) -> Result<String, Error> {
     let command = process::Command::new("youtube-dl")
         .args(&["--get-title", &link])
         .output()
         .await?;
-    let title = String::from_utf8(command.stdout)?;
-    Ok(String::from(title.trim()))
+
+    String::from_utf8(command.stdout)
+        .map(|title| String::from(title.trim()))
+        .map_err(Error::from)
 }
 
-pub async fn get_available_file_formats(link: &str) -> Result<Vec<String>, Error> {
+pub async fn get_available_file_formats(link: &str) -> Result<Vec<FileFormat>, Error> {
     let command = process::Command::new("youtube-dl")
         .args(&["-F", &link])
         .output()
         .await?;
-    let command_stdout = String::from_utf8(command.stdout)?;
-    let available_file_formats = command_stdout
-        .lines()
-        .filter(|&line| !line.starts_with('['))
-        .map(String::from)
-        .collect();
-    Ok(available_file_formats)
+
+    String::from_utf8(command.stdout)
+        .map_err(Error::from)
+        .and_then(|s| FileFormat::from_youtube_dl_stdout(&s))
 }
 
+// TODO LORIS: better stdout, as table
 pub async fn ask_preferred_file_format(
     title: &str,
-    available_file_formats: &[String],
+    available_file_formats: &[FileFormat],
 ) -> Result<String, Error> {
     println!("Choose the file format for {}:", title);
     let chosen_format = loop {
-        let chosen_line_index = Select::new()
+        let chosen_format_index = Select::new()
             .items(available_file_formats)
             .default(1)
             .interact()?;
-        let chosen_line =
-            available_file_formats
-                .get(chosen_line_index)
-                .ok_or(Error::ApplicationError(String::from(
-                    "failed to get chosen line",
-                )))?;
-        let chosen_format =
-            chosen_line
-                .split_whitespace()
-                .next()
-                .ok_or(Error::ApplicationError(String::from(
-                    "failed to get format from chosen line",
-                )))?;
-        if let Ok(_) = chosen_format.parse::<i32>() {
-            break chosen_format;
+
+        if chosen_format_index != 0 {
+            break available_file_formats[chosen_format_index].code.clone(); // TODO LORIS: error handling, no need to clone
         }
         println!("Invalid selection");
     };
 
-    Ok(String::from(chosen_format))
+    Ok(chosen_format)
 }
 
+// TODO LORIS: return successful titles and failures instead of printing here
 pub async fn download_video(
     link: &str,
     title: &str,
@@ -78,6 +69,6 @@ pub async fn download_video(
         return Ok(());
     }
 
-    println!("Successfully downloaded {}", title);
+    println!("Successfully downloaded {}", title); // TODO LORIS: send up title ?
     Ok(())
 }
