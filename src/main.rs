@@ -28,9 +28,11 @@ async fn async_main() -> Result<(), Box<dyn Error>> {
         })
         .collect();
 
-    // TODO LORIS: collect you_ld::Error here and send them up?
-    futures::future::join_all(smol_tasks).await;
-
+    for result in futures::future::join_all(smol_tasks).await {
+        if let Err(e) = result {
+            eprintln!("{}", e)
+        }
+    }
     Ok(())
 }
 
@@ -53,3 +55,5 @@ async fn process_request(link: String, output_dir: String) -> Result<(), you_dl:
 // cursor to choose file format
 // lib fn return type synonyms instead of strings
 // allow either --link or --from-file args
+// remove unwraps and Box<dyn Error> from async_main
+// colorize stdout for readability, maybe setting verbosity level w/ logger

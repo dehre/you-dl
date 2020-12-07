@@ -13,9 +13,9 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Error::YoutubeDlError(msg) => write!(f, "youtube-dl error: {}", msg),
-            Error::ApplicationError(msg) => write!(f, "application error: {}", msg),
-            Error::UserError(msg) => write!(f, "user error: {}", msg),
+            Error::YoutubeDlError(msg) => write!(f, "youtube-dl error: {}", msg.trim()),
+            Error::ApplicationError(msg) => write!(f, "application error: {}", msg.trim()),
+            Error::UserError(msg) => write!(f, "user error: {}", msg.trim()),
         }
     }
 }
