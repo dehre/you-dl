@@ -21,7 +21,7 @@ impl FileFormat {
         let mut words_iter = line.split_whitespace();
         let (code, extension, resolution) =
             (words_iter.next(), words_iter.next(), words_iter.next());
-        let size = words_iter.find(|&word| word.ends_with('k'));
+        let size = words_iter.last();
 
         let extract = |optional_str: Option<&str>| -> Result<String, Error> {
             optional_str
