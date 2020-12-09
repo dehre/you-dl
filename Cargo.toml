@@ -1,5 +1,5 @@
 [package]
-name = "youtube_downloader"
+name = "you_dl"
 version = "0.1.0"
 authors = ["L-oris <loris4526@gmail.com>"]
 edition = "2018"

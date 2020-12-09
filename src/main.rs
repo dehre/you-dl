@@ -1,7 +1,7 @@
 mod config;
 
 use std::error::Error;
-use youtube_downloader as you_dl;
+use you_dl;
 
 fn main() {
     if let Err(e) = smol::block_on(async_main()) {
