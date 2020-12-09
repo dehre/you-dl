@@ -1,11 +1,12 @@
-use dialoguer::Select;
-use futures::FutureExt;
-use smol::process;
-
 mod error;
 mod file_format;
+
 pub use error::Error;
+
+use dialoguer::Select;
 use file_format::FileFormat;
+use futures::FutureExt;
+use smol::process;
 
 pub async fn get_title(link: &str) -> Result<String, Error> {
     let process_output = process::Command::new("youtube-dl")

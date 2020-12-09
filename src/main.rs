@@ -1,8 +1,7 @@
-use smol::fs;
+mod config;
+
 use std::error::Error;
 use youtube_downloader as you_dl;
-
-mod cli_config;
 
 fn main() {
     if let Err(e) = smol::block_on(async_main()) {
@@ -12,19 +11,14 @@ fn main() {
 }
 
 async fn async_main() -> Result<(), Box<dyn Error>> {
-    let config = cli_config::parse();
-    let str_links = fs::read_to_string(&config.from_file).await?;
-    let links: Vec<&str> = str_links
-        .lines()
-        .filter(|&l| !l.trim().is_empty())
-        .collect();
-
-    let smol_tasks: Vec<_> = links
+    let config = config::parse().await?;
+    let smol_tasks: Vec<_> = config
+        .video_urls
         .iter()
-        .map(|&link| {
-            let link = String::from(link);
-            let output_dir = String::from(config.output_dir.to_str().unwrap());
-            smol::spawn(process_request(link, output_dir))
+        .map(|url| {
+            let url = url.to_owned(); // TODO LORIS: into_iter() instead?
+            let output_dir = config.output_dir.clone();
+            smol::spawn(process_request(url, output_dir))
         })
         .collect();
 
@@ -36,6 +30,7 @@ async fn async_main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+// TODO LORIS: rename `link` to `url`
 async fn process_request(link: String, output_dir: String) -> Result<(), you_dl::Error> {
     let title = you_dl::get_title(&link).await?;
     let available_file_formats = you_dl::get_available_file_formats(&link).await?;
@@ -55,5 +50,7 @@ async fn process_request(link: String, output_dir: String) -> Result<(), you_dl:
 // cursor to choose file format
 // lib fn return type synonyms instead of strings
 // allow either --link or --from-file args
+// rename project you_dl
+// move stuff for lib and stuff for main in separate directories: https://stackoverflow.com/questions/26946646/rust-package-with-both-a-library-and-a-binary
 // remove unwraps and Box<dyn Error> from async_main
 // colorize stdout for readability, maybe setting verbosity level w/ logger
