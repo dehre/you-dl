@@ -1,4 +1,4 @@
-use super::ParseConfigError;
+use super::ConfigError;
 use clap::{App, Arg};
 
 #[derive(Debug)]
@@ -8,11 +8,11 @@ pub struct CliArgs {
     pub urls: Option<Vec<String>>,
 }
 
-const FROM_FILE_ARG: &str = "from-file"; // TODO LORIS: rename accordingly
+const FROM_FILE_PATH_ARG: &str = "from-file-path";
 const OUTPUT_DIR_ARG: &str = "output-dir";
 const URL_ARG: &str = "url";
 
-pub fn parse_cli_args() -> Result<CliArgs, ParseConfigError> {
+pub fn parse_cli_args() -> Result<CliArgs, ConfigError> {
     let matches = App::new("youtube_downloader")
         .arg(
             Arg::new(URL_ARG)
@@ -22,7 +22,7 @@ pub fn parse_cli_args() -> Result<CliArgs, ParseConfigError> {
                 .about("Url(s) to download"),
         )
         .arg(
-            Arg::new(FROM_FILE_ARG)
+            Arg::new(FROM_FILE_PATH_ARG)
                 .short('f')
                 .long("from-file")
                 .value_name("PATH")
@@ -40,7 +40,7 @@ pub fn parse_cli_args() -> Result<CliArgs, ParseConfigError> {
         )
         .get_matches();
 
-    let from_file_path = matches.value_of(FROM_FILE_ARG).map(|s| s.to_owned());
+    let from_file_path = matches.value_of(FROM_FILE_PATH_ARG).map(|s| s.to_owned());
     let output_dir = matches.value_of(OUTPUT_DIR_ARG).unwrap().to_owned();
     let urls = matches
         .values_of(URL_ARG)

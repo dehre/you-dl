@@ -1,41 +1,41 @@
-mod error;
 mod file_format;
+mod you_dl_error;
 
-pub use error::Error;
+pub use you_dl_error::YouDlError;
 
 use dialoguer::Select;
 use file_format::FileFormat;
 use futures::FutureExt;
 use smol::process;
 
-pub async fn get_title(link: &str) -> Result<String, Error> {
+pub async fn get_title(url: &str) -> Result<String, YouDlError> {
     let process_output = process::Command::new("youtube-dl")
-        .args(&["--get-title", &link])
+        .args(&["--get-title", &url])
         .output()
         .map(|result| result.map(handle_bad_exit_status)?)
         .await?;
 
     String::from_utf8(process_output.stdout)
         .map(|title| String::from(title.trim()))
-        .map_err(Error::from)
+        .map_err(YouDlError::from)
 }
 
-pub async fn get_available_file_formats(link: &str) -> Result<Vec<FileFormat>, Error> {
+pub async fn get_available_file_formats(url: &str) -> Result<Vec<FileFormat>, YouDlError> {
     let process_output = process::Command::new("youtube-dl")
-        .args(&["-F", &link])
+        .args(&["-F", &url])
         .output()
         .map(|result| result.map(handle_bad_exit_status)?)
         .await?;
 
     String::from_utf8(process_output.stdout)
-        .map_err(Error::from)
+        .map_err(YouDlError::from)
         .and_then(|s| FileFormat::from_youtube_dl_stdout(&s))
 }
 
 pub async fn ask_preferred_file_format(
     title: &str,
     available_file_formats: &[FileFormat],
-) -> Result<String, Error> {
+) -> Result<String, YouDlError> {
     println!("Choose the file format for {}:", title);
     let chosen_index = Select::new()
         .items(available_file_formats)
@@ -45,7 +45,7 @@ pub async fn ask_preferred_file_format(
     available_file_formats
         .get(chosen_index)
         .map(|file_format| file_format.code.clone())
-        .ok_or(Error::ApplicationError(format!(
+        .ok_or(YouDlError::ApplicationError(format!(
             "Invalid file format chosen: index {} in len {}",
             chosen_index,
             available_file_formats.len()
@@ -53,15 +53,15 @@ pub async fn ask_preferred_file_format(
 }
 
 pub async fn download_video(
-    link: &str,
+    url: &str,
     title: &str,
     format: &str,
     output_dir: &str,
-) -> Result<(), Error> {
+) -> Result<(), YouDlError> {
     println!("Start downloading {}...", title);
     let file_path = format!("{}/%(title)s.%(ext)s", output_dir);
     process::Command::new("youtube-dl")
-        .args(&["-f", format, "-o", &file_path, link])
+        .args(&["-f", format, "-o", &file_path, &url])
         .output()
         .map(|result| result.map(handle_bad_exit_status)?)
         .await?;
@@ -70,10 +70,10 @@ pub async fn download_video(
     Ok(())
 }
 
-fn handle_bad_exit_status(process_output: process::Output) -> Result<process::Output, Error> {
+fn handle_bad_exit_status(process_output: process::Output) -> Result<process::Output, YouDlError> {
     if !process_output.status.success() {
         let err = String::from_utf8(process_output.stderr)?;
-        return Err(Error::YoutubeDlError(err));
+        return Err(YouDlError::YoutubeDlError(err));
     }
     Ok(process_output)
 }

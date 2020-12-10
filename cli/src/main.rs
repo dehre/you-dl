@@ -1,22 +1,18 @@
 mod config;
 
-use std::error::Error;
-use you_dl;
+use you_dl::{self, YouDlError};
 
 fn main() {
-    if let Err(e) = smol::block_on(async_main()) {
-        eprintln!("Application error: {}", e);
-        std::process::exit(1);
-    }
+    smol::block_on(async_main())
 }
 
-async fn async_main() -> Result<(), Box<dyn Error>> {
-    let config = config::parse().await?;
+async fn async_main() {
+    let config = config::parse().await.unwrap_or_else(|e| panic!(e));
     let smol_tasks: Vec<_> = config
         .video_urls
         .iter()
         .map(|url| {
-            let url = url.to_owned(); // TODO LORIS: into_iter() instead?
+            let url = url.to_owned();
             let output_dir = config.output_dir.clone();
             smol::spawn(process_request(url, output_dir))
         })
@@ -27,16 +23,14 @@ async fn async_main() -> Result<(), Box<dyn Error>> {
             eprintln!("{}", e)
         }
     }
-    Ok(())
 }
 
-// TODO LORIS: rename `link` to `url`
-async fn process_request(link: String, output_dir: String) -> Result<(), you_dl::Error> {
-    let title = you_dl::get_title(&link).await?;
-    let available_file_formats = you_dl::get_available_file_formats(&link).await?;
+async fn process_request(url: String, output_dir: String) -> Result<(), YouDlError> {
+    let title = you_dl::get_title(&url).await?;
+    let available_file_formats = you_dl::get_available_file_formats(&url).await?;
     let chosen_file_format =
         you_dl::ask_preferred_file_format(&title, &available_file_formats).await?;
-    you_dl::download_video(&link, &title, &chosen_file_format, &output_dir).await?;
+    you_dl::download_video(&url, &title, &chosen_file_format, &output_dir).await?;
     Ok(())
 }
 

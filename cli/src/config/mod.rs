@@ -1,8 +1,8 @@
 mod cli_args;
-mod parse_config_error;
+mod config_error;
 
 use cli_args::parse_cli_args;
-use parse_config_error::ParseConfigError;
+use config_error::ConfigError;
 use smol::fs;
 
 pub struct Config {
@@ -10,10 +10,10 @@ pub struct Config {
     pub output_dir: String,
 }
 
-pub async fn parse() -> Result<Config, ParseConfigError> {
+pub async fn parse() -> Result<Config, ConfigError> {
     let cli_args = parse_cli_args()?;
     if cli_args.urls.is_none() && cli_args.from_file_path.is_none() {
-        return Err(ParseConfigError(String::from("no urls to be downloaded")));
+        return Err(ConfigError(String::from("no urls to be downloaded")));
     };
 
     let mut video_urls = Vec::new();
@@ -31,9 +31,9 @@ pub async fn parse() -> Result<Config, ParseConfigError> {
     })
 }
 
-async fn read_urls_from_file(file_path: &str) -> Result<Vec<String>, ParseConfigError> {
+async fn read_urls_from_file(file_path: &str) -> Result<Vec<String>, ConfigError> {
     let file_contents = fs::read_to_string(file_path).await.map_err(|err| {
-        ParseConfigError(format!(
+        ConfigError(format!(
             "could not read contents from {}: {}",
             file_path, err
         ))
