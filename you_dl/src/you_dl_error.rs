@@ -1,4 +1,4 @@
-use std::error::Error as StdError;
+use std::error;
 use std::fmt;
 use std::io;
 use std::string;
@@ -20,7 +20,7 @@ impl fmt::Display for YouDlError {
     }
 }
 
-impl StdError for YouDlError {}
+impl error::Error for YouDlError {}
 
 impl From<io::Error> for YouDlError {
     fn from(err: io::Error) -> Self {

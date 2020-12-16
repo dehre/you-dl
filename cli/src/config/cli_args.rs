@@ -6,11 +6,13 @@ pub struct CliArgs {
     pub from_file_path: Option<String>,
     pub output_dir: String,
     pub urls: Option<Vec<String>>,
+    pub use_wrapper: bool,
 }
 
 const FROM_FILE_PATH_ARG: &str = "from-file-path";
 const OUTPUT_DIR_ARG: &str = "output-dir";
 const URL_ARG: &str = "url";
+const USE_WRAPPER: &str = "wrapper";
 
 pub fn parse_cli_args() -> Result<CliArgs, ConfigError> {
     let matches = App::new("youtube_downloader")
@@ -20,6 +22,13 @@ pub fn parse_cli_args() -> Result<CliArgs, ConfigError> {
                 .index(1)
                 .multiple(true)
                 .about("Url(s) to download"),
+        )
+        .arg(
+            Arg::new(USE_WRAPPER)
+                .short('w')
+                .long("use-wrapper")
+                .about("Use youtube-dl to download the videos; see github.com/ytdl-org/youtube-dl")
+                .takes_value(false),
         )
         .arg(
             Arg::new(FROM_FILE_PATH_ARG)
@@ -50,10 +59,12 @@ pub fn parse_cli_args() -> Result<CliArgs, ConfigError> {
                 .map(|&url| url.to_owned())
                 .collect::<Vec<String>>()
         });
+    let use_wrapper = matches.is_present(USE_WRAPPER);
 
     Ok(CliArgs {
         from_file_path,
         output_dir,
         urls,
+        use_wrapper,
     })
 }

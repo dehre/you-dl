@@ -7,14 +7,18 @@ fn main() {
 }
 
 async fn async_main() {
-    let config = config::parse().await.unwrap_or_else(|e| panic!(e));
+    let config = config::parse().await.unwrap();
+    if !config.use_wrapper {
+        panic!("Functionality still to be implemented, pass the `-w` flag as workaround");
+    }
+
     let smol_tasks: Vec<_> = config
         .video_urls
         .iter()
         .map(|url| {
             let url = url.to_owned();
             let output_dir = config.output_dir.clone();
-            smol::spawn(process_request(url, output_dir))
+            smol::spawn(process_request_with_wrapper(url, output_dir))
         })
         .collect();
 
@@ -25,12 +29,12 @@ async fn async_main() {
     }
 }
 
-async fn process_request(url: String, output_dir: String) -> Result<(), YouDlError> {
-    let title = you_dl::get_title(&url).await?;
-    let available_file_formats = you_dl::get_available_file_formats(&url).await?;
+async fn process_request_with_wrapper(url: String, output_dir: String) -> Result<(), YouDlError> {
+    let title = you_dl::wrapper::get_title(&url).await?;
+    let available_file_formats = you_dl::wrapper::get_available_file_formats(&url).await?;
     let chosen_file_format =
-        you_dl::ask_preferred_file_format(&title, &available_file_formats).await?;
-    you_dl::download_video(&url, &title, &chosen_file_format, &output_dir).await?;
+        you_dl::wrapper::ask_preferred_file_format(&title, &available_file_formats).await?;
+    you_dl::wrapper::download_video(&url, &title, &chosen_file_format, &output_dir).await?;
     Ok(())
 }
 

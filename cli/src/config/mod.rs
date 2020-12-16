@@ -5,13 +5,16 @@ use cli_args::parse_cli_args;
 use config_error::ConfigError;
 use smol::fs;
 
+#[derive(Debug)]
 pub struct Config {
     pub video_urls: Vec<String>,
     pub output_dir: String,
+    pub use_wrapper: bool,
 }
 
 pub async fn parse() -> Result<Config, ConfigError> {
     let cli_args = parse_cli_args()?;
+
     if cli_args.urls.is_none() && cli_args.from_file_path.is_none() {
         return Err(ConfigError(String::from("no urls to be downloaded")));
     };
@@ -28,6 +31,7 @@ pub async fn parse() -> Result<Config, ConfigError> {
     Ok(Config {
         video_urls,
         output_dir: cli_args.output_dir,
+        use_wrapper: cli_args.use_wrapper,
     })
 }
 
