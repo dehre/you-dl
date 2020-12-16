@@ -5,58 +5,62 @@ use serde_json;
 use std::error::Error;
 use std::{fs, io, process};
 
+// TODO LORIS: find out what's the best audio to download for the selected video, and make sure Quicktime can always play it.
+
 // Nice article: https://medium.com/javascript-in-plain-english/make-your-own-youtube-downloader-626133572429
 // use ffmpeg to merge video to audio: https://davidwalsh.name/combine-audio-video
-
-// TODO LORIS: not all videos can be downloaded
+// useful ffmpeg commands: https://www.labnol.org/internet/useful-ffmpeg-commands/28490/
+// useful stackoverflow for ffmpeg: https://stackoverflow.com/questions/11779490/how-to-add-a-new-audio-not-mixing-into-a-video-using-ffmpeg
+// https://opensource.com/article/17/6/ffmpeg-convert-media-file-formats
 
 #[derive(Deserialize, Debug)]
 struct Format {
     itag: i32,
-    // TODO LORIS: not all formats have a url
-    url: String,
+    url: Option<String>,
+    #[serde(rename(deserialize = "qualityLabel"))]
+    quality_label: String,
+    #[serde(rename(deserialize = "mimeType"))]
+    mime_type: String,
 }
 
 #[derive(Deserialize, Debug)]
 struct StreamingData {
     #[serde(rename(deserialize = "formats"))]
     formats: Vec<Format>,
-    #[serde(rename(deserialize = "adaptiveFormats"))]
-    // TODO LORIS: not always adaptive_formats is present
-    adaptive_formats: Vec<Format>,
 }
 
 #[derive(Deserialize, Debug)]
 struct VideoDetails {
     #[serde(rename(deserialize = "videoId"))]
     video_id: String,
-
     #[serde(rename(deserialize = "title"))]
     title: String,
 }
 
 #[derive(Deserialize, Debug)]
-struct YoutubeJSON {
+struct PlayerResponse {
     #[serde(rename(deserialize = "streamingData"))]
-    streaming_data: StreamingData,
-
+    streaming_data: Option<StreamingData>,
     #[serde(rename(deserialize = "videoDetails"))]
     video_details: VideoDetails,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let id = "W6-7jKGxNYk";
-    let youtube_json = get_youtube_video_info(id)?;
-    // println!("{:#?}", youtube_json);
+    let id = "0X5SjKh1n34";
+    let player_response = get_player_response(id)?;
+    // println!("{:#?}", player_response);
 
-    let title = youtube_json.video_details.title.replace("+", " ");
-    let formats = youtube_json.streaming_data.adaptive_formats; // TODO LORIS: merge `formats` with `adaptive_formats`
+    let title = player_response.video_details.title.replace("+", " ");
+    let StreamingData { formats } = player_response
+        .streaming_data
+        .ok_or("video not available for downloading")?;
 
     let video_title = format!("{}_video", title);
     download_format(&formats, 278, &video_title)?;
     let audio_title = format!("{}_audio", title);
     download_format(&formats, 140, &audio_title)?;
 
+    // COMMAND: ffmpeg -i <video> -i <audio> -c:v copy -c:a copy <output>
     let output_title = format!("{}.mp4", title);
     process::Command::new("ffmpeg")
         .args(&[
@@ -76,7 +80,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn get_youtube_video_info(video_id: &str) -> Result<YoutubeJSON, Box<dyn Error>> {
+fn get_player_response(video_id: &str) -> Result<PlayerResponse, Box<dyn Error>> {
     let url = format!(
         "https://www.youtube.com/get_video_info?video_id={}",
         video_id
@@ -87,17 +91,21 @@ fn get_youtube_video_info(video_id: &str) -> Result<YoutubeJSON, Box<dyn Error>>
         .map(|s| s.to_owned())
         .ok_or("Could not find player_response")?;
 
-    // fs::write("result.json", &json_video_info)?;
+    // fs::write("raw_player_response.json", &player_response)?;
 
-    serde_json::from_str::<YoutubeJSON>(&player_response).map_err(|e| Box::new(e) as Box<dyn Error>)
+    serde_json::from_str::<PlayerResponse>(&player_response)
+        .map_err(|e| Box::new(e) as Box<dyn Error>)
 }
 
 fn download_format(formats: &[Format], itag: i32, file_name: &str) -> Result<(), Box<dyn Error>> {
-    let download_url = &formats
+    let &download_url = &formats
         .iter()
         .find(|&format| format.itag == itag)
-        .ok_or("Could not find requested itag")?
-        .url;
+        .expect("Could not find requested itag")
+        .url
+        .as_ref()
+        .ok_or("video not available for downloading")?;
+
     // println!("download url: {:?}", download_url);
 
     let mut http_response = reqwest::blocking::get(download_url.as_str())?;
