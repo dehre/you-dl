@@ -7,8 +7,10 @@ use std::string;
 pub enum YouDlError {
     YoutubeDlError(String),
     ApplicationError(String),
+    InvalidURLError(String),
     UndownloadableError(String),
     UserError(String),
+    YoutubeAPIError(String),
 }
 
 impl fmt::Display for YouDlError {
@@ -16,6 +18,9 @@ impl fmt::Display for YouDlError {
         match self {
             YouDlError::YoutubeDlError(msg) => write!(f, "Youtube-dl error: {}", msg.trim()),
             YouDlError::ApplicationError(msg) => write!(f, "Application error: {}", msg.trim()),
+            YouDlError::InvalidURLError(invalid_url) => {
+                write!(f, "The url provided is not valid: {}", invalid_url)
+            }
             YouDlError::UndownloadableError(video_id_or_title) => {
                 write!(
                     f,
@@ -24,6 +29,9 @@ impl fmt::Display for YouDlError {
                 )
             }
             YouDlError::UserError(msg) => write!(f, "User error: {}", msg.trim()),
+            YouDlError::YoutubeAPIError(msg) => {
+                write!(f, "Invalid response received from Youtube: {}", msg.trim())
+            }
         }
     }
 }

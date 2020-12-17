@@ -30,49 +30,51 @@ impl fmt::Display for DownloadableFormat {
     }
 }
 
-pub fn process_request(url: &str) -> Result<(), Box<dyn Error>> {
+pub fn process_request(url: &str) -> Result<(), YouDlError> {
     let video_id = extract_video_id(url)?;
     let player_response = get_player_response(video_id)?;
     let downloadable_formats = extract_downloadable_formats(&player_response);
     if downloadable_formats.len() == 0 {
-        // TODO LORIS: remove Box::new
-        return Err(Box::new(YouDlError::UndownloadableError(
+        return Err(YouDlError::UndownloadableError(
             player_response.video_details.title,
-        )));
+        ));
     };
     let chosen_format =
-        ask_preferred_file_format(&player_response.video_details.title, &downloadable_formats)?;
+        ask_preferred_file_format(&player_response.video_details.title, &downloadable_formats);
     download(&chosen_format.url, &player_response.video_details.title)?;
     Ok(())
 }
 
-// TODO LORIS: less silly implementation
-fn extract_video_id(url: &str) -> Result<&str, Box<dyn Error>> {
+fn extract_video_id(url: &str) -> Result<&str, YouDlError> {
     // source: https://stackoverflow.com/questions/3452546/how-do-i-get-the-youtube-video-id-from-a-url/27728417#27728417
     let video_id =
         Regex::new(r"^.*(?:(?:youtu\.be/|v/|vi/|u/\w/|embed/)|(?:(?:watch)?\?v(?:i)?=|\&v(?:i)?=))([^#\&\?]*).*")
             .expect("valid regex expression")
             .captures(url)
-            .ok_or("Failed to capture video_id")?
+            .ok_or(YouDlError::InvalidURLError(url.to_owned()))?
             .get(1)
-            .ok_or("Failed to capture video_id")?
+            .ok_or(YouDlError::InvalidURLError(url.to_owned()))?
             .as_str();
     Ok(video_id)
 }
 
-fn get_player_response(video_id: &str) -> Result<PlayerResponse, Box<dyn Error>> {
+fn get_player_response(video_id: &str) -> Result<PlayerResponse, YouDlError> {
     let get_video_info_url = format!(
         "https://www.youtube.com/get_video_info?video_id={}",
         video_id
     );
-    let response_body = reqwest::blocking::get(&get_video_info_url)?.text()?;
+    let response_body = reqwest::blocking::get(&get_video_info_url)
+        .and_then(|response| response.text())
+        .map_err(|e| YouDlError::YoutubeAPIError(e.to_string()))?;
     let player_response = QString::from(response_body.as_str())
         .get("player_response")
         .map(|s| s.to_owned())
-        .ok_or("Could not get player_response from youtube's API")?;
+        .ok_or(YouDlError::YoutubeAPIError(
+            "missing player_response".to_owned(),
+        ))?;
 
     serde_json::from_str::<PlayerResponse>(&player_response)
-        .map_err(|e| Box::new(e) as Box<dyn Error>)
+        .map_err(|e| YouDlError::YoutubeAPIError(e.to_string()))
 }
 
 fn extract_downloadable_formats(player_response: &PlayerResponse) -> Vec<DownloadableFormat> {
@@ -96,21 +98,23 @@ fn extract_downloadable_formats(player_response: &PlayerResponse) -> Vec<Downloa
 fn ask_preferred_file_format<'a>(
     title: &str,
     downloadable_formats: &'a [DownloadableFormat],
-) -> Result<&'a DownloadableFormat, Box<dyn Error>> {
+) -> &'a DownloadableFormat {
     println!("Choose the file format for {}:", title);
     let chosen_index = Select::new()
         .items(downloadable_formats)
         .default(0)
-        .interact()?;
+        .interact()
+        .unwrap();
 
-    let chosen_format = downloadable_formats
+    downloadable_formats
         .get(chosen_index)
-        .expect("chosen item within range of options");
-    Ok(chosen_format)
+        .expect("chosen item within range of options")
 }
 
-fn download(url: &str, destination_file_name: &str) -> Result<(), Box<dyn Error>> {
-    let mut response = reqwest::blocking::get(url)?;
+fn download(url: &str, destination_file_name: &str) -> Result<(), YouDlError> {
+    let mut response = reqwest::blocking::get(url).map_err(|e| {
+        YouDlError::YoutubeAPIError(format!("invalid download_url {}: {}", url, e.to_string()))
+    })?;
     let mut new_file = fs::File::create(destination_file_name)?;
     io::copy(&mut response, &mut new_file)?;
     Ok(())
