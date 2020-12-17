@@ -2,15 +2,18 @@ use dialoguer::Select;
 use qstring::QString;
 use regex::Regex;
 use reqwest;
-use std::error::Error;
 use std::fmt;
 use std::fs;
 use std::io;
+use std::path::Path;
 
 mod models;
 pub mod wrapper;
 pub use models::PlayerResponse;
 pub use models::YouDlError;
+
+// TODO LORIS: make everything async
+// TODO LORIS: extract file format for downloaded video
 
 // TODO LORIS: impl From<Format> for DownloadableFormat
 struct DownloadableFormat {
@@ -30,18 +33,16 @@ impl fmt::Display for DownloadableFormat {
     }
 }
 
-pub fn process_request(url: &str) -> Result<(), YouDlError> {
+pub fn process_request(url: &str, output_dir: &str) -> Result<(), YouDlError> {
     let video_id = extract_video_id(url)?;
     let player_response = get_player_response(video_id)?;
+    let title = &player_response.video_details.title;
     let downloadable_formats = extract_downloadable_formats(&player_response);
     if downloadable_formats.len() == 0 {
-        return Err(YouDlError::UndownloadableError(
-            player_response.video_details.title,
-        ));
+        return Err(YouDlError::UndownloadableError(title.clone()));
     };
-    let chosen_format =
-        ask_preferred_file_format(&player_response.video_details.title, &downloadable_formats);
-    download(&chosen_format.url, &player_response.video_details.title)?;
+    let chosen_format = ask_preferred_file_format(title, &downloadable_formats);
+    download(&chosen_format.url, output_dir, title)?;
     Ok(())
 }
 
@@ -111,12 +112,14 @@ fn ask_preferred_file_format<'a>(
         .expect("chosen item within range of options")
 }
 
-fn download(url: &str, destination_file_name: &str) -> Result<(), YouDlError> {
+fn download(url: &str, output_dir: &str, output_file_name: &str) -> Result<(), YouDlError> {
     let mut response = reqwest::blocking::get(url).map_err(|e| {
         YouDlError::YoutubeAPIError(format!("invalid download_url {}: {}", url, e.to_string()))
     })?;
-    let mut new_file = fs::File::create(destination_file_name)?;
-    io::copy(&mut response, &mut new_file)?;
+    let mut file = fs::File::create(Path::new(output_dir).join(output_file_name))
+        .map_err(|_| YouDlError::UserError("invalid output directory provided".to_owned()))?;
+
+    io::copy(&mut response, &mut file)?;
     Ok(())
 }
 

@@ -46,6 +46,7 @@ async fn read_urls_from_file(file_path: &str) -> Result<Vec<String>, ConfigError
     Ok(file_contents
         .lines()
         .filter(|&l| !l.trim().is_empty())
+        .filter(|&l| !l.starts_with("#") && !l.starts_with("//"))
         .map(|s| s.to_owned())
         .collect())
 }

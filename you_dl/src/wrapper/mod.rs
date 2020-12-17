@@ -6,7 +6,15 @@ use smol::process;
 
 mod file_format;
 
-pub async fn get_title(url: &str) -> Result<String, YouDlError> {
+pub async fn process_request(url: &str, output_dir: &str) -> Result<(), YouDlError> {
+    let title = get_title(&url).await?;
+    let available_file_formats = get_available_file_formats(&url).await?;
+    let chosen_file_format = ask_preferred_file_format(&title, &available_file_formats).await?;
+    download_video(&url, &title, &chosen_file_format, &output_dir).await?;
+    Ok(())
+}
+
+async fn get_title(url: &str) -> Result<String, YouDlError> {
     let process_output = process::Command::new("youtube-dl")
         .args(&["--get-title", &url])
         .output()
@@ -18,7 +26,7 @@ pub async fn get_title(url: &str) -> Result<String, YouDlError> {
         .map_err(YouDlError::from)
 }
 
-pub async fn get_available_file_formats(url: &str) -> Result<Vec<FileFormat>, YouDlError> {
+async fn get_available_file_formats(url: &str) -> Result<Vec<FileFormat>, YouDlError> {
     let process_output = process::Command::new("youtube-dl")
         .args(&["-F", &url])
         .output()
@@ -30,7 +38,7 @@ pub async fn get_available_file_formats(url: &str) -> Result<Vec<FileFormat>, Yo
         .and_then(|s| FileFormat::from_youtube_dl_stdout(&s))
 }
 
-pub async fn ask_preferred_file_format(
+async fn ask_preferred_file_format(
     title: &str,
     available_file_formats: &[FileFormat],
 ) -> Result<String, YouDlError> {
@@ -50,7 +58,7 @@ pub async fn ask_preferred_file_format(
         )))
 }
 
-pub async fn download_video(
+async fn download_video(
     url: &str,
     title: &str,
     format: &str,
