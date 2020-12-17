@@ -9,10 +9,9 @@ edition = "2018"
 [dependencies]
 dialoguer = "0.7"
 futures = "0.3"
-smol = "1"
-
-# experiment.rs
 qstring = "0.7"
+regex = "1.4"
 reqwest = { version = "0.10", features = ["blocking"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+smol = "1"

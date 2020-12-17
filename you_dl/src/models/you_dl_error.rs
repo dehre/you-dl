@@ -7,6 +7,7 @@ use std::string;
 pub enum YouDlError {
     YoutubeDlError(String),
     ApplicationError(String),
+    UndownloadableError(String),
     UserError(String),
 }
 
@@ -15,6 +16,13 @@ impl fmt::Display for YouDlError {
         match self {
             YouDlError::YoutubeDlError(msg) => write!(f, "Youtube-dl error: {}", msg.trim()),
             YouDlError::ApplicationError(msg) => write!(f, "Application error: {}", msg.trim()),
+            YouDlError::UndownloadableError(video_id_or_title) => {
+                write!(
+                    f,
+                    "No formats available to be downloaded for: {}",
+                    video_id_or_title
+                )
+            }
             YouDlError::UserError(msg) => write!(f, "User error: {}", msg.trim()),
         }
     }

@@ -1,10 +1,10 @@
-mod file_format;
-
 use super::YouDlError;
 use dialoguer::Select;
 use file_format::FileFormat;
 use futures::FutureExt;
 use smol::process;
+
+mod file_format;
 
 pub async fn get_title(url: &str) -> Result<String, YouDlError> {
     let process_output = process::Command::new("youtube-dl")
