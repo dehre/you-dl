@@ -24,7 +24,7 @@ impl fmt::Display for YouDlError {
             YouDlError::UndownloadableError(video_id_or_title) => {
                 write!(
                     f,
-                    "No formats available to be downloaded for: {}",
+                    "No formats available to download for: {}",
                     video_id_or_title
                 )
             }

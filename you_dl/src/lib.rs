@@ -1,10 +1,10 @@
+use async_compat::CompatExt;
 use dialoguer::Select;
 use qstring::QString;
 use regex::Regex;
 use reqwest;
+use smol::{fs, io};
 use std::fmt;
-use std::fs;
-use std::io;
 use std::path::Path;
 
 mod models;
@@ -12,7 +12,6 @@ pub mod wrapper;
 pub use models::PlayerResponse;
 pub use models::YouDlError;
 
-// TODO LORIS: make everything async
 // TODO LORIS: extract file format for downloaded video
 
 // TODO LORIS: impl From<Format> for DownloadableFormat
@@ -33,16 +32,16 @@ impl fmt::Display for DownloadableFormat {
     }
 }
 
-pub fn process_request(url: &str, output_dir: &str) -> Result<(), YouDlError> {
+pub async fn process_request(url: &str, output_dir: &str) -> Result<(), YouDlError> {
     let video_id = extract_video_id(url)?;
-    let player_response = get_player_response(video_id)?;
+    let player_response = get_player_response(video_id).await?;
     let title = &player_response.video_details.title;
     let downloadable_formats = extract_downloadable_formats(&player_response);
     if downloadable_formats.len() == 0 {
         return Err(YouDlError::UndownloadableError(title.clone()));
     };
     let chosen_format = ask_preferred_file_format(title, &downloadable_formats);
-    download(&chosen_format.url, output_dir, title)?;
+    download(&chosen_format.url, output_dir, title).await?;
     Ok(())
 }
 
@@ -59,14 +58,20 @@ fn extract_video_id(url: &str) -> Result<&str, YouDlError> {
     Ok(video_id)
 }
 
-fn get_player_response(video_id: &str) -> Result<PlayerResponse, YouDlError> {
+async fn get_player_response(video_id: &str) -> Result<PlayerResponse, YouDlError> {
     let get_video_info_url = format!(
         "https://www.youtube.com/get_video_info?video_id={}",
         video_id
     );
-    let response_body = reqwest::blocking::get(&get_video_info_url)
-        .and_then(|response| response.text())
+
+    let response_body = reqwest::get(&get_video_info_url)
+        .compat()
+        .await
+        .map_err(|e| YouDlError::YoutubeAPIError(e.to_string()))?
+        .text()
+        .await
         .map_err(|e| YouDlError::YoutubeAPIError(e.to_string()))?;
+
     let player_response = QString::from(response_body.as_str())
         .get("player_response")
         .map(|s| s.to_owned())
@@ -112,14 +117,17 @@ fn ask_preferred_file_format<'a>(
         .expect("chosen item within range of options")
 }
 
-fn download(url: &str, output_dir: &str, output_file_name: &str) -> Result<(), YouDlError> {
-    let mut response = reqwest::blocking::get(url).map_err(|e| {
+async fn download(url: &str, output_dir: &str, output_file_name: &str) -> Result<(), YouDlError> {
+    let response = reqwest::get(url).compat().await.map_err(|e| {
         YouDlError::YoutubeAPIError(format!("invalid download_url {}: {}", url, e.to_string()))
     })?;
+    let response_bytes = response.bytes().await.expect("valid response");
+
     let mut file = fs::File::create(Path::new(output_dir).join(output_file_name))
+        .await
         .map_err(|_| YouDlError::UserError("invalid output directory provided".to_owned()))?;
 
-    io::copy(&mut response, &mut file)?;
+    io::copy(&mut &*response_bytes, &mut file).await?;
     Ok(())
 }
 

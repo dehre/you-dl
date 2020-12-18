@@ -33,7 +33,7 @@ async fn process_request(
     if use_wrapper {
         you_dl::wrapper::process_request(&url, &output_dir).await
     } else {
-        you_dl::process_request(&url, &output_dir)
+        you_dl::process_request(&url, &output_dir).await
     }
 }
 
