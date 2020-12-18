@@ -7,12 +7,13 @@ use smol::{fs, io};
 use std::fmt;
 use std::path::Path;
 
+mod file_extensions;
 mod models;
 pub mod wrapper;
 pub use models::PlayerResponse;
 pub use models::YouDlError;
 
-// TODO LORIS: extract file format for downloaded video
+// TODO LORIS: check this one: https://tyrrrz.me/blog/reverse-engineering-youtube
 
 // TODO LORIS: impl From<Format> for DownloadableFormat
 struct DownloadableFormat {
@@ -26,7 +27,7 @@ impl fmt::Display for DownloadableFormat {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{:6}{:8}{}",
+            "{:4}  {:8}{}",
             self.itag, self.quality_label, self.mime_type
         )
     }
@@ -41,7 +42,8 @@ pub async fn process_request(url: &str, output_dir: &str) -> Result<(), YouDlErr
         return Err(YouDlError::UndownloadableError(title.clone()));
     };
     let chosen_format = ask_preferred_file_format(title, &downloadable_formats);
-    download(&chosen_format.url, output_dir, title).await?;
+    let file_extension = file_extensions::get_file_extension(chosen_format.itag).unwrap_or("");
+    download(&chosen_format.url, output_dir, title, file_extension).await?;
     Ok(())
 }
 
@@ -78,6 +80,8 @@ async fn get_player_response(video_id: &str) -> Result<PlayerResponse, YouDlErro
         .ok_or(YouDlError::YoutubeAPIError(
             "missing player_response".to_owned(),
         ))?;
+
+    // std::fs::write("player_response.json", player_response.as_bytes()).unwrap();
 
     serde_json::from_str::<PlayerResponse>(&player_response)
         .map_err(|e| YouDlError::YoutubeAPIError(e.to_string()))
@@ -117,15 +121,22 @@ fn ask_preferred_file_format<'a>(
         .expect("chosen item within range of options")
 }
 
-async fn download(url: &str, output_dir: &str, output_file_name: &str) -> Result<(), YouDlError> {
+async fn download(
+    url: &str,
+    output_dir: &str,
+    output_file_name: &str,
+    file_extension: &str,
+) -> Result<(), YouDlError> {
     let response = reqwest::get(url).compat().await.map_err(|e| {
         YouDlError::YoutubeAPIError(format!("invalid download_url {}: {}", url, e.to_string()))
     })?;
     let response_bytes = response.bytes().await.expect("valid response");
 
-    let mut file = fs::File::create(Path::new(output_dir).join(output_file_name))
-        .await
-        .map_err(|_| YouDlError::UserError("invalid output directory provided".to_owned()))?;
+    let mut file = fs::File::create(
+        Path::new(output_dir).join(format!("{}.{}", output_file_name, file_extension)),
+    )
+    .await
+    .map_err(|_| YouDlError::UserError("invalid output directory provided".to_owned()))?;
 
     io::copy(&mut &*response_bytes, &mut file).await?;
     Ok(())
