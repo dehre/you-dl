@@ -8,6 +8,10 @@ pub struct Format {
     pub quality_label: String,
     #[serde(rename(deserialize = "mimeType"))]
     pub mime_type: String,
+    #[serde(rename(deserialize = "bitrate"))]
+    pub bitrate: i32,
+    #[serde(rename(deserialize = "approxDurationMs"))]
+    pub approx_duration_ms: String,
 }
 
 #[derive(Deserialize, Debug)]

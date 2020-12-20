@@ -7,19 +7,32 @@ use smol::{fs, io};
 use std::fmt;
 use std::path::Path;
 
-mod file_extensions;
 mod models;
+mod utils;
 pub mod wrapper;
 pub use models::PlayerResponse;
 pub use models::YouDlError;
 
-// TODO LORIS: check this one: https://tyrrrz.me/blog/reverse-engineering-youtube
+// TODO LORIS: video title should not have `+` as separators -> check why, if there are edge cases
+// TODO LORIS: size = averageBitrate * (approxDurationMs/1000) / 8 -> and estimations as youtube-dl does
+// TODO LORIS: utils directory
+// TODO LORIS: impl From<Format> for DownloadableFormat, or create your own Deserializer instead
+// TODO LORIS: UndownloadableError should include the reason in second field
 
-// TODO LORIS: impl From<Format> for DownloadableFormat
+// TODO LORIS: make ui nicer, with progress bar?
+
+// TODO LORIS: suggest search with youtube-dl if no formats are found; check if binary is present
+
+// TODO LORIS: check this one: https://tyrrrz.me/blog/reverse-engineering-youtube -> add to README.md
+
+// TODO LORIS: remove initial outline
+// TODO LORIS: publish to homebrew
+
 struct DownloadableFormat {
     itag: i32,
     url: String,
     quality_label: String,
+    approx_size_bytes: String,
     mime_type: String,
 }
 
@@ -27,8 +40,11 @@ impl fmt::Display for DownloadableFormat {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{:4}  {:8}{}",
-            self.itag, self.quality_label, self.mime_type
+            "{:<5}{:<6}{:<12}{}",
+            self.itag,
+            self.quality_label,
+            utils::format_file_size(&self.approx_size_bytes),
+            self.mime_type
         )
     }
 }
@@ -36,13 +52,13 @@ impl fmt::Display for DownloadableFormat {
 pub async fn process_request(url: &str, output_dir: &str) -> Result<(), YouDlError> {
     let video_id = extract_video_id(url)?;
     let player_response = get_player_response(video_id).await?;
-    let title = &player_response.video_details.title;
+    let title = &player_response.video_details.title.replace("+", " ");
     let downloadable_formats = extract_downloadable_formats(&player_response);
     if downloadable_formats.len() == 0 {
         return Err(YouDlError::UndownloadableError(title.clone()));
     };
     let chosen_format = ask_preferred_file_format(title, &downloadable_formats);
-    let file_extension = file_extensions::get_file_extension(chosen_format.itag).unwrap_or("");
+    let file_extension = utils::get_file_extension(chosen_format.itag).unwrap_or("");
     download(&chosen_format.url, output_dir, title, file_extension).await?;
     Ok(())
 }
@@ -81,7 +97,7 @@ async fn get_player_response(video_id: &str) -> Result<PlayerResponse, YouDlErro
             "missing player_response".to_owned(),
         ))?;
 
-    // std::fs::write("player_response.json", player_response.as_bytes()).unwrap();
+    std::fs::write("player_response.json", player_response.as_bytes()).unwrap();
 
     serde_json::from_str::<PlayerResponse>(&player_response)
         .map_err(|e| YouDlError::YoutubeAPIError(e.to_string()))
@@ -96,11 +112,17 @@ fn extract_downloadable_formats(player_response: &PlayerResponse) -> Vec<Downloa
         .iter()
         .filter(|&format| format.url.is_some())
         .map(|format| format.clone())
-        .map(|format| DownloadableFormat {
-            itag: format.itag,
-            url: format.url.unwrap(),
-            quality_label: format.quality_label,
-            mime_type: format.mime_type,
+        .map(|format| {
+            let approx_duration_ms = format.approx_duration_ms.parse::<i32>().unwrap(); // TODO LORIS
+            let approx_size_bytes = format.bitrate * (approx_duration_ms / 1000) / 8;
+            let approx_size_bytes = approx_size_bytes.to_string();
+            return DownloadableFormat {
+                itag: format.itag,
+                url: format.url.unwrap(),
+                quality_label: format.quality_label,
+                approx_size_bytes,
+                mime_type: format.mime_type,
+            };
         })
         .collect()
 }
