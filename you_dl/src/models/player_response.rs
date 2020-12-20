@@ -1,5 +1,27 @@
 use serde::Deserialize;
 
+#[derive(Deserialize, Debug)]
+pub struct PlayerResponse {
+    #[serde(rename(deserialize = "streamingData"))]
+    pub streaming_data: Option<StreamingData>,
+    #[serde(rename(deserialize = "videoDetails"))]
+    pub video_details: VideoDetails,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct VideoDetails {
+    #[serde(rename(deserialize = "videoId"))]
+    pub video_id: String,
+    #[serde(rename(deserialize = "title"))]
+    pub title: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct StreamingData {
+    #[serde(rename(deserialize = "formats"))]
+    pub formats: Vec<Format>,
+}
+
 #[derive(Deserialize, Debug, Clone)]
 pub struct Format {
     pub itag: i32,
@@ -12,26 +34,4 @@ pub struct Format {
     pub bitrate: i32,
     #[serde(rename(deserialize = "approxDurationMs"))]
     pub approx_duration_ms: String,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct StreamingData {
-    #[serde(rename(deserialize = "formats"))]
-    pub formats: Vec<Format>,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct VideoDetails {
-    #[serde(rename(deserialize = "videoId"))]
-    pub video_id: String,
-    #[serde(rename(deserialize = "title"))]
-    pub title: String,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct PlayerResponse {
-    #[serde(rename(deserialize = "streamingData"))]
-    pub streaming_data: Option<StreamingData>,
-    #[serde(rename(deserialize = "videoDetails"))]
-    pub video_details: VideoDetails,
 }
