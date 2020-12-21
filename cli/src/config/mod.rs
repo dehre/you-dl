@@ -1,9 +1,10 @@
-mod cli_args;
-mod config_error;
-
 use cli_args::parse_cli_args;
 use config_error::ConfigError;
 use smol::fs;
+use std::path::Path;
+
+mod cli_args;
+mod config_error;
 
 #[derive(Debug)]
 pub struct Config {
@@ -15,8 +16,14 @@ pub struct Config {
 pub async fn parse() -> Result<Config, ConfigError> {
     let cli_args = parse_cli_args()?;
 
+    let output_dir_path = Path::new(&cli_args.output_dir);
+    if !output_dir_path.is_dir() {
+        println!("creating directory \"{}\"...", output_dir_path.display());
+        fs::create_dir_all(output_dir_path).await.unwrap();
+    }
+
     if cli_args.urls.is_none() && cli_args.from_file_path.is_none() {
-        return Err(ConfigError(String::from("no urls to be downloaded")));
+        return Err(ConfigError("no urls to be downloaded".to_owned()));
     };
 
     let mut video_urls = Vec::new();

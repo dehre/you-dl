@@ -1,4 +1,4 @@
-use super::YouDlError;
+use crate::YouDlError;
 use std::fmt;
 
 pub struct FileFormat {

@@ -1,4 +1,4 @@
-use super::YouDlError;
+use crate::YouDlError;
 use dialoguer::Select;
 use file_format::FileFormat;
 use smol::process;

@@ -1,5 +1,5 @@
-use super::super::utils;
-use super::{PlayerResponse, YouDlError};
+use crate::utils;
+use crate::{PlayerResponse, YouDlError};
 use std::convert::TryFrom;
 use std::fmt;
 
@@ -69,8 +69,8 @@ impl TryFrom<PlayerResponse> for DownloadOptions {
                     "approx_duration_ms cannot be parsed into integer".to_owned(),
                 )
             })?;
-            let approx_size_bytes = (format.bitrate * (approx_duration_ms / 1000) / 8).to_string();
-            let file_size = utils::format_file_size(&approx_size_bytes); // TODO LORIS: accept i32 directly here
+            let file_size_bytes = format.bitrate * (approx_duration_ms / 1000) / 8;
+            let file_size = utils::format_file_size(file_size_bytes);
 
             download_options.push(DownloadOption {
                 video_id: (&video_id).clone(),
