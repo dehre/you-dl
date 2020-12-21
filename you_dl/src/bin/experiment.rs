@@ -5,13 +5,12 @@ use serde_json;
 use std::error::Error;
 use std::{fs, io, process};
 
-// TODO LORIS: find out what's the best audio to download for the selected video, and make sure Quicktime can always play it.
-
 // Nice article: https://medium.com/javascript-in-plain-english/make-your-own-youtube-downloader-626133572429
 // use ffmpeg to merge video to audio: https://davidwalsh.name/combine-audio-video
 // useful ffmpeg commands: https://www.labnol.org/internet/useful-ffmpeg-commands/28490/
 // useful stackoverflow for ffmpeg: https://stackoverflow.com/questions/11779490/how-to-add-a-new-audio-not-mixing-into-a-video-using-ffmpeg
 // https://opensource.com/article/17/6/ffmpeg-convert-media-file-formats
+// find out what's the best audio to download for the selected video, and make sure Quicktime can always play it
 
 #[derive(Deserialize, Debug)]
 struct Format {

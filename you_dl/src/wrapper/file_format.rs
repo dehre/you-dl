@@ -23,12 +23,13 @@ impl FileFormat {
             (words_iter.next(), words_iter.next(), words_iter.next());
         let size = words_iter.last();
 
-        let extract =
-            |optional_str: Option<&str>| -> Result<String, YouDlError> {
-                optional_str.and_then(|s| Some(String::from(s))).ok_or(
-                    YouDlError::ApplicationError("failed to parse file format".to_owned()),
-                )
-            };
+        let extract = |optional_str: Option<&str>| -> Result<String, YouDlError> {
+            optional_str
+                .and_then(|s| Some(String::from(s)))
+                .ok_or(YouDlError::Application(
+                    "failed to parse file_format".to_owned(),
+                ))
+        };
 
         Ok(FileFormat {
             code: extract(code)?,

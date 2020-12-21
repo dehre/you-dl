@@ -24,20 +24,12 @@ impl fmt::Display for DownloadOption {
     }
 }
 
+// DownloadOptions always wraps at least one DownloadOption
 pub struct DownloadOptions(pub Vec<DownloadOption>);
 
 impl DownloadOptions {
-    pub fn is_empty(&self) -> bool {
-        self.0.len() == 0
-    }
-
     pub fn get_title(&self) -> Result<&str, YouDlError> {
-        if self.is_empty() {
-            return Err(YouDlError::ApplicationError(
-                "cannot get title if no options are available".to_owned(),
-            ));
-        }
-        Ok(&self.0.get(0).unwrap().title)
+        Ok(&self.0.get(0).expect("at least one option available").title)
     }
 }
 
@@ -50,10 +42,17 @@ impl TryFrom<PlayerResponse> for DownloadOptions {
         let streaming_data =
             player_response
                 .streaming_data
-                .ok_or(YouDlError::UndownloadableError(
+                .ok_or(YouDlError::UndownloadableVideo(
                     (&title).clone(),
-                    "streaming_data missing from json".to_owned(),
+                    "missing value for streaming_data".to_owned(),
                 ))?;
+
+        if streaming_data.formats.len() == 0 {
+            return Err(YouDlError::UndownloadableVideo(
+                title.to_owned(),
+                "no options available to download".to_owned(),
+            ));
+        }
 
         let mut download_options =
             Vec::<DownloadOption>::with_capacity(streaming_data.formats.len());
@@ -61,12 +60,14 @@ impl TryFrom<PlayerResponse> for DownloadOptions {
             let file_extension = utils::get_file_extension(format.itag)
                 .unwrap_or("")
                 .to_owned();
-            let url = format.url.ok_or(YouDlError::UndownloadableError(
+            let url = format.url.ok_or(YouDlError::UndownloadableVideo(
                 (&title).clone(),
-                "url missing from json".to_owned(),
+                "missing value for url".to_owned(),
             ))?;
             let approx_duration_ms = format.approx_duration_ms.parse::<i32>().map_err(|_| {
-                YouDlError::YoutubeAPIError("invalid approx_duration_ms from json".to_owned())
+                YouDlError::InvalidResponse(
+                    "approx_duration_ms cannot be parsed into integer".to_owned(),
+                )
             })?;
             let approx_size_bytes = (format.bitrate * (approx_duration_ms / 1000) / 8).to_string();
             let file_size = utils::format_file_size(&approx_size_bytes); // TODO LORIS: accept i32 directly here
