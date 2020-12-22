@@ -1,12 +1,15 @@
 use async_compat::CompatExt;
 use dialoguer::Select;
+use futures_util::StreamExt;
+use indicatif::ProgressBar;
 use qstring::QString;
 use reqwest;
 use smol::{fs, io};
 use std::convert::TryFrom;
+use std::convert::TryInto;
 use std::path::Path;
 
-// make macros available for the entire crate
+// make macros available for the entire crate.
 use colored;
 #[macro_use]
 mod log;
@@ -17,8 +20,6 @@ pub mod wrapper;
 pub use models::PlayerResponse;
 pub use models::YouDlError;
 
-// TODO LORIS: make ui nicer, with progress bar?
-
 // TODO LORIS: suggest search with youtube-dl if no formats are found; check if binary is present
 
 // TODO LORIS: add adaptive formats, audios only
@@ -28,12 +29,16 @@ pub use models::YouDlError;
 // TODO LORIS: remove initial outline
 // TODO LORIS: publish to homebrew
 
-pub async fn process_request(url: &str, output_dir: &str) -> Result<(), YouDlError> {
+pub async fn process_request(
+    url: &str,
+    output_dir: &str,
+    progress_bar: ProgressBar,
+) -> Result<(), YouDlError> {
     let video_id = utils::extract_video_id(url)?;
     let player_response = get_player_response(video_id).await?;
     let download_options = models::DownloadOptions::try_from(player_response)?;
     let chosen_option = ask_preferred_file_format(download_options);
-    download(chosen_option, output_dir).await?;
+    download(chosen_option, output_dir, progress_bar).await?;
     Ok(())
 }
 
@@ -58,7 +63,6 @@ async fn get_player_response(video_id: &str) -> Result<PlayerResponse, YouDlErro
             "missing value for player_response".to_owned(),
         ))?;
 
-    // std::fs::write("player_response.json", player_response.as_bytes()).unwrap();
     serde_json::from_str::<PlayerResponse>(&player_response)
         .map_err(|e| YouDlError::InvalidResponse(e.to_string()))
 }
@@ -84,24 +88,36 @@ fn ask_preferred_file_format(
 async fn download(
     download_option: models::DownloadOption,
     output_dir: &str,
+    progress_bar: ProgressBar,
 ) -> Result<(), YouDlError> {
     info!("start downloading `{}`...", download_option.title);
     let response = reqwest::get(&download_option.url)
         .compat()
         .await
         .map_err(|e| YouDlError::InvalidResponse(e.to_string()))?;
-    let response_bytes = response.bytes().await.expect("valid response");
-    let mut output_file = fs::File::create(Path::new(output_dir).join(format!(
+    progress_bar.set_length(response.content_length().unwrap_or(u64::MAX));
+
+    let mut output_file = fs::File::create(Path::new(output_dir).join(
+        format!( // TODO LORIS: create output name directly in DownloadOption
         "{}.{}",
         &download_option.title, &download_option.file_extension
-    )))
+    ),
+    ))
     .await
     .map_err(|e| YouDlError::Application(e.to_string()))?;
 
-    io::copy(&mut &*response_bytes, &mut output_file)
-        .await
-        .map_err(|e| YouDlError::Application(e.to_string()))?;
+    let mut stream = response.bytes_stream();
+    while let Some(chunk) = stream.next().await {
+        let chunk = chunk.map_err(|e| YouDlError::InvalidResponse(e.to_string()))?;
+        progress_bar.inc(chunk.len().try_into().expect("valid conversion"));
+        io::copy(&mut &*chunk, &mut output_file)
+            .await
+            .map_err(|e| YouDlError::Application(e.to_string()))?;
+    }
 
-    success!("successfully downloaded `{}`", download_option.title);
+    progress_bar.finish_with_message(&format!(
+        "Successfully downloaded: {}",
+        download_option.title
+    ));
     Ok(())
 }
