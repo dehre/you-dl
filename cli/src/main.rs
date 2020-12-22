@@ -7,7 +7,7 @@ fn main() {
 }
 
 async fn async_main() {
-    let config = config::parse().await.unwrap();
+    let config = config::parse().await.unwrap(); // TODO LORIS: use error! macro
     let smol_tasks: Vec<_> = config
         .video_urls
         .iter()
@@ -20,7 +20,7 @@ async fn async_main() {
 
     for result in futures::future::join_all(smol_tasks).await {
         if let Err(e) = result {
-            eprintln!("{}", e)
+            eprintln!("{}", e) // TODO LORIS: use error! macro
         }
     }
 }

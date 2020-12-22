@@ -2,7 +2,7 @@ use crate::YouDlError;
 use std::fmt;
 
 pub struct FileFormat {
-    pub code: String,
+    pub code: String, // TODO LORIS: rename itag
     pub extension: String,
     pub resolution: String,
     pub size: String,

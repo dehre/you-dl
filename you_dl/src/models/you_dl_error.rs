@@ -22,7 +22,7 @@ impl fmt::Display for YouDlError {
             YouDlError::UndownloadableVideo(video_id_or_title, msg) => {
                 write!(
                     f,
-                    "Undownloadable Video Error for \"{}\": {}",
+                    "Undownloadable Video Error for `{}`: {}",
                     video_id_or_title, msg
                 )
             }

@@ -6,6 +6,11 @@ use smol::{fs, io};
 use std::convert::TryFrom;
 use std::path::Path;
 
+// make macros available for the entire crate
+use colored;
+#[macro_use]
+mod log;
+
 mod models;
 mod utils;
 pub mod wrapper;
@@ -15,6 +20,8 @@ pub use models::YouDlError;
 // TODO LORIS: make ui nicer, with progress bar?
 
 // TODO LORIS: suggest search with youtube-dl if no formats are found; check if binary is present
+
+// TODO LORIS: add adaptive formats, audios only
 
 // TODO LORIS: check this one: https://tyrrrz.me/blog/reverse-engineering-youtube -> add to README.md
 
@@ -59,9 +66,9 @@ async fn get_player_response(video_id: &str) -> Result<PlayerResponse, YouDlErro
 fn ask_preferred_file_format(
     mut download_options: models::DownloadOptions,
 ) -> models::DownloadOption {
-    println!(
-        "Choose the file format for {}:",
-        download_options.get_title().unwrap()
+    select!(
+        "choose the file format for `{}`:",
+        download_options.get_title()
     );
     let chosen_index = Select::new()
         .items(&download_options.0)
@@ -69,13 +76,16 @@ fn ask_preferred_file_format(
         .interact()
         .unwrap();
 
-    download_options.0.remove(chosen_index)
+    let chosen = download_options.0.remove(chosen_index);
+    info!("chosen itag {} for `{}`", chosen.itag, chosen.title);
+    chosen
 }
 
 async fn download(
     download_option: models::DownloadOption,
     output_dir: &str,
 ) -> Result<(), YouDlError> {
+    info!("start downloading `{}`...", download_option.title);
     let response = reqwest::get(&download_option.url)
         .compat()
         .await
@@ -91,5 +101,7 @@ async fn download(
     io::copy(&mut &*response_bytes, &mut output_file)
         .await
         .map_err(|e| YouDlError::Application(e.to_string()))?;
+
+    success!("successfully downloaded `{}`", download_option.title);
     Ok(())
 }

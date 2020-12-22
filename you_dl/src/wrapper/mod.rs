@@ -40,17 +40,19 @@ async fn get_available_file_formats(url: &str) -> Result<Vec<FileFormat>, YouDlE
 }
 
 fn ask_preferred_file_format(title: &str, available_file_formats: &[FileFormat]) -> String {
-    println!("Choose the file format for {}:", title);
+    select!("choose the file format for `{}`:", title);
     let chosen_index = Select::new()
         .items(available_file_formats)
         .default(0)
         .interact()
         .unwrap();
 
-    available_file_formats
+    let itag = available_file_formats
         .get(chosen_index)
         .map(|file_format| file_format.code.clone())
-        .expect("chosen available format")
+        .expect("chosen available format");
+    info!("chosen itag {} for `{}`", itag, title);
+    itag
 }
 
 async fn download(
@@ -59,7 +61,7 @@ async fn download(
     format: &str,
     output_dir: &str,
 ) -> Result<(), YouDlError> {
-    println!("Start downloading {}...", title);
+    info!("start downloading `{}`...", title);
     let file_path = format!("{}/%(title)s.%(ext)s", output_dir);
     process::Command::new("youtube-dl")
         .args(&["-f", format, "-o", &file_path, &url])
@@ -68,7 +70,7 @@ async fn download(
         .map_err(|e| YouDlError::YoutubeDl(e.to_string()))
         .and_then(handle_bad_exit_status)?;
 
-    println!("Successfully downloaded {}", title);
+    success!("successfully downloaded `{}`", title);
     Ok(())
 }
 

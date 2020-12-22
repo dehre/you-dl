@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 async-compat = "0.1"
+colored = "2.0"
 dialoguer = "0.7"
 futures = "0.3"
 qstring = "0.7"

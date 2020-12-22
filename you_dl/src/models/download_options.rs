@@ -28,8 +28,8 @@ impl fmt::Display for DownloadOption {
 pub struct DownloadOptions(pub Vec<DownloadOption>);
 
 impl DownloadOptions {
-    pub fn get_title(&self) -> Result<&str, YouDlError> {
-        Ok(&self.0.get(0).expect("at least one option available").title)
+    pub fn get_title(&self) -> &str {
+        &self.0.get(0).expect("at least one option available").title
     }
 }
 
