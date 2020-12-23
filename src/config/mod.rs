@@ -22,8 +22,7 @@ pub async fn parse() -> Result<Config, ConfigError> {
 
     let output_dir_path = Path::new(&raw_cli_args.output_dir);
     if !output_dir_path.is_dir() {
-        // TODO LORIS: use info! macro
-        println!("creating directory \"{}\"...", output_dir_path.display());
+        you_dl::info!("creating directory \"{}\"...", output_dir_path.display());
         fs::create_dir_all(output_dir_path).await.unwrap();
     }
 

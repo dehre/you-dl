@@ -39,16 +39,15 @@ impl TryFrom<PlayerResponse> for DownloadOptions {
     fn try_from(player_response: PlayerResponse) -> Result<Self, Self::Error> {
         let video_id = player_response.video_details.video_id;
         let title = player_response.video_details.title.replace("+", " ");
-        let streaming_data =
-            player_response
-                .streaming_data
-                .ok_or(YouDlError::UndownloadableVideo(
-                    (&title).clone(),
-                    "missing value for streaming_data".to_owned(),
-                ))?;
+        let streaming_data = player_response
+            .streaming_data
+            .ok_or(YouDlError::Undownloadable(
+                (&title).clone(),
+                "missing value for streaming_data".to_owned(),
+            ))?;
 
         if streaming_data.formats.len() == 0 {
-            return Err(YouDlError::UndownloadableVideo(
+            return Err(YouDlError::Undownloadable(
                 title.to_owned(),
                 "no options available to download".to_owned(),
             ));
@@ -62,7 +61,7 @@ impl TryFrom<PlayerResponse> for DownloadOptions {
                 return "";
             });
             let file_name = format!("{}.{}", &title, file_extension);
-            let url = format.url.ok_or(YouDlError::UndownloadableVideo(
+            let url = format.url.ok_or(YouDlError::Undownloadable(
                 (&title).clone(),
                 "missing value for url".to_owned(),
             ))?;

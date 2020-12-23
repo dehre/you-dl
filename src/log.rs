@@ -22,3 +22,8 @@ macro_rules! success {
 macro_rules! error {
     ($($arg:tt)*) => (println!("{:>7} {}", ($crate::colored::Colorize::bold($crate::colored::Colorize::red("Error:"))), format_args!($($arg)*)));
 }
+
+#[macro_export]
+macro_rules! failed {
+    ($($arg:tt)*) => (println!("{:>7} {}", ($crate::colored::Colorize::bold($crate::colored::Colorize::red("Failed:"))), format_args!($($arg)*)));
+}

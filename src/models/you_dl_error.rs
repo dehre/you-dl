@@ -6,7 +6,7 @@ pub enum YouDlError {
     YoutubeDl(String),
     Application(String),
     InvalidURL(String),
-    UndownloadableVideo(String, String),
+    Undownloadable(String, String),
     User(String),
     InvalidResponse(String),
 }
@@ -19,10 +19,10 @@ impl fmt::Display for YouDlError {
             YouDlError::InvalidURL(url) => {
                 write!(f, "Invalid URL Error: {}", url)
             }
-            YouDlError::UndownloadableVideo(video_id_or_title, msg) => {
+            YouDlError::Undownloadable(video_id_or_title, msg) => {
                 write!(
                     f,
-                    "Undownloadable Video Error for `{}`: {}",
+                    "Undownloadable Error for `{}`: {}",
                     video_id_or_title, msg
                 )
             }

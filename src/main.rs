@@ -1,5 +1,5 @@
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
-use std::thread;
+use std::{process, thread};
 use you_dl::{self, YouDlError};
 
 mod config;
@@ -10,7 +10,10 @@ fn main() {
 
 async fn async_main() {
     let multi_bar = MultiProgress::new();
-    let config = config::parse().await.unwrap(); // TODO LORIS: use error! macro
+    let config = config::parse().await.unwrap_or_else(|e| {
+        you_dl::error!("{}", e);
+        process::exit(1);
+    });
     let smol_tasks: Vec<_> = config
         .video_urls
         .iter()
@@ -34,7 +37,7 @@ async fn async_main() {
 
     for result in futures::future::join_all(smol_tasks).await {
         if let Err(e) = result {
-            eprintln!("{}", e) // TODO LORIS: use error! macro
+            you_dl::failed!("{}", e)
         }
     }
 }

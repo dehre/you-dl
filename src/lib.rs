@@ -9,8 +9,8 @@ use std::convert::TryFrom;
 use std::convert::TryInto;
 use std::path::Path;
 
-// make macros available for the entire crate.
-use colored;
+// make macros in `log.rs` available to the entire project.
+pub use colored;
 #[macro_use]
 mod log;
 
@@ -21,8 +21,6 @@ pub use models::PlayerResponse;
 pub use models::YouDlError;
 
 // TODO LORIS: add adaptive formats, audios only
-
-// TODO LORIS: remove workspaces, use log macros everywhere
 
 // TODO LORIS: check this one: https://tyrrrz.me/blog/reverse-engineering-youtube -> add to README.md
 
@@ -55,14 +53,14 @@ async fn get_player_response(video_id: &str) -> Result<PlayerResponse, YouDlErro
         .await
         .map_err(|e| YouDlError::InvalidResponse(e.to_string()))?;
 
-    let player_response = QString::from(response_body.as_str())
+    let json_player_response = QString::from(response_body.as_str())
         .get("player_response")
         .map(|s| s.to_owned())
         .ok_or(YouDlError::InvalidResponse(
             "missing value for player_response".to_owned(),
         ))?;
 
-    serde_json::from_str::<PlayerResponse>(&player_response)
+    serde_json::from_str::<PlayerResponse>(&json_player_response)
         .map_err(|e| YouDlError::InvalidResponse(e.to_string()))
 }
 
