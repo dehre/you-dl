@@ -1,6 +1,11 @@
 #[macro_export]
 macro_rules! info {
-    ($($arg:tt)*) => (println!("{:>7} {}", ($crate::colored::Colorize::italic($crate::colored::Colorize::blue("Info:"))), format_args!($($arg)*)));
+    ($($arg:tt)*) => (println!("{:>7} {}", ($crate::colored::Colorize::blue("Info:")), format_args!($($arg)*)));
+}
+
+#[macro_export]
+macro_rules! warn {
+    ($($arg:tt)*) => (println!("{:>7} {}", ($crate::colored::Colorize::yellow("Warn:")), format_args!($($arg)*)));
 }
 
 #[macro_export]

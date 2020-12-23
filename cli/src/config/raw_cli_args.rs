@@ -2,7 +2,7 @@ use super::ConfigError;
 use clap::{App, Arg};
 
 #[derive(Debug)]
-pub struct CliArgs {
+pub struct RawCliArgs {
     pub from_file_path: Option<String>,
     pub output_dir: String,
     pub urls: Option<Vec<String>>,
@@ -14,7 +14,7 @@ const OUTPUT_DIR_ARG: &str = "output-dir";
 const URL_ARG: &str = "url";
 const USE_WRAPPER: &str = "wrapper";
 
-pub fn parse_cli_args() -> Result<CliArgs, ConfigError> {
+pub fn parse() -> Result<RawCliArgs, ConfigError> {
     let matches = App::new("youtube_downloader")
         .arg(
             Arg::new(URL_ARG)
@@ -26,8 +26,12 @@ pub fn parse_cli_args() -> Result<CliArgs, ConfigError> {
         .arg(
             Arg::new(USE_WRAPPER)
                 .short('w')
-                .long("use-wrapper")
-                .about("Use youtube-dl to download the videos; see github.com/ytdl-org/youtube-dl")
+                .long("wrapper")
+                .long_about(
+                    "Not all urls are currently supported by you_dl. If you have `youtube-dl` installed
+on your machine, you can retry with the `-w` flag: `you_dl -w <failed_url>`.
+For more info, see `github.com/ytdl-org/youtube-dl`.",
+                )
                 .takes_value(false),
         )
         .arg(
@@ -61,7 +65,7 @@ pub fn parse_cli_args() -> Result<CliArgs, ConfigError> {
         });
     let use_wrapper = matches.is_present(USE_WRAPPER);
 
-    Ok(CliArgs {
+    Ok(RawCliArgs {
         from_file_path,
         output_dir,
         urls,

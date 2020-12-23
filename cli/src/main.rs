@@ -43,7 +43,7 @@ fn create_process_bar(multi_bar: &MultiProgress) -> ProgressBar {
     let progress_bar = multi_bar.add(ProgressBar::new(0));
     progress_bar.set_style(
         ProgressStyle::default_bar()
-            .template("[{elapsed}] {bar:40.cyan/blue} {percent}% {wide_msg}")
+            .template("{prefix:.green} {bar:40.cyan/blue} {percent}% {wide_msg}")
             .progress_chars("##-"),
     );
     progress_bar
@@ -61,18 +61,3 @@ async fn process_request(
         you_dl::process_request(&url, &output_dir, progress_bar).await
     }
 }
-
-// OUTLINE:
-// spawn child process for each link
-// args input_file and output_directory
-// handle invalid links & errors from youtube-dl
-// async wait for output?
-// choose each video format before downloading
-// proper cli library
-// cursor to choose file format
-// lib fn return type synonyms instead of strings
-// allow either --link or --from-file args
-// rename project you_dl
-// move stuff for lib and stuff for main in separate directories: https://stackoverflow.com/questions/26946646/rust-package-with-both-a-library-and-a-binary
-// remove unwraps and Box<dyn Error> from async_main
-// colorize stdout for readability, maybe setting verbosity level w/ logger

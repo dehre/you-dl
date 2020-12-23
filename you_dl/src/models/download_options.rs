@@ -6,7 +6,7 @@ use std::fmt;
 pub struct DownloadOption {
     pub video_id: String,
     pub title: String,
-    pub file_extension: String,
+    pub file_name: String,
     pub itag: i32,
     pub url: String,
     pub quality_label: String,
@@ -18,7 +18,7 @@ impl fmt::Display for DownloadOption {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{:<5}{:<6}{:<10}{}",
+            "{:<5}{:<6}{:<14}{}",
             self.itag, self.quality_label, self.file_size, self.mime_type
         )
     }
@@ -57,9 +57,11 @@ impl TryFrom<PlayerResponse> for DownloadOptions {
         let mut download_options =
             Vec::<DownloadOption>::with_capacity(streaming_data.formats.len());
         for format in streaming_data.formats.into_iter() {
-            let file_extension = utils::get_file_extension(format.itag)
-                .unwrap_or("")
-                .to_owned();
+            let file_extension = utils::get_file_extension(format.itag).unwrap_or_else(|| {
+                warn!("no file_extension found for itag {}", format.itag);
+                return "";
+            });
+            let file_name = format!("{}.{}", &title, file_extension);
             let url = format.url.ok_or(YouDlError::UndownloadableVideo(
                 (&title).clone(),
                 "missing value for url".to_owned(),
@@ -75,7 +77,7 @@ impl TryFrom<PlayerResponse> for DownloadOptions {
             download_options.push(DownloadOption {
                 video_id: (&video_id).clone(),
                 title: (&title).clone(),
-                file_extension,
+                file_name,
                 itag: format.itag,
                 url,
                 quality_label: format.quality_label,

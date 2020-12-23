@@ -20,13 +20,12 @@ pub mod wrapper;
 pub use models::PlayerResponse;
 pub use models::YouDlError;
 
-// TODO LORIS: suggest search with youtube-dl if no formats are found; check if binary is present
-
 // TODO LORIS: add adaptive formats, audios only
+
+// TODO LORIS: remove workspaces, use log macros everywhere
 
 // TODO LORIS: check this one: https://tyrrrz.me/blog/reverse-engineering-youtube -> add to README.md
 
-// TODO LORIS: remove initial outline
 // TODO LORIS: publish to homebrew
 
 pub async fn process_request(
@@ -90,21 +89,16 @@ async fn download(
     output_dir: &str,
     progress_bar: ProgressBar,
 ) -> Result<(), YouDlError> {
-    info!("start downloading `{}`...", download_option.title);
     let response = reqwest::get(&download_option.url)
         .compat()
         .await
         .map_err(|e| YouDlError::InvalidResponse(e.to_string()))?;
     progress_bar.set_length(response.content_length().unwrap_or(u64::MAX));
+    progress_bar.set_prefix("Status:"); // Setting the prefix in main will show the bars before the prompt
 
-    let mut output_file = fs::File::create(Path::new(output_dir).join(
-        format!( // TODO LORIS: create output name directly in DownloadOption
-        "{}.{}",
-        &download_option.title, &download_option.file_extension
-    ),
-    ))
-    .await
-    .map_err(|e| YouDlError::Application(e.to_string()))?;
+    let mut output_file = fs::File::create(Path::new(output_dir).join(&download_option.file_name))
+        .await
+        .map_err(|e| YouDlError::Application(e.to_string()))?;
 
     let mut stream = response.bytes_stream();
     while let Some(chunk) = stream.next().await {

@@ -2,7 +2,7 @@ use crate::YouDlError;
 use std::fmt;
 
 pub struct FileFormat {
-    pub code: String, // TODO LORIS: rename itag
+    pub itag: String,
     pub extension: String,
     pub resolution: String,
     pub size: String,
@@ -19,7 +19,7 @@ impl FileFormat {
 
     fn parse_line(line: &str) -> Result<FileFormat, YouDlError> {
         let mut words_iter = line.split_whitespace();
-        let (code, extension, resolution) =
+        let (itag, extension, resolution) =
             (words_iter.next(), words_iter.next(), words_iter.next());
         let size = words_iter.last();
 
@@ -32,7 +32,7 @@ impl FileFormat {
         };
 
         Ok(FileFormat {
-            code: extract(code)?,
+            itag: extract(itag)?,
             extension: extract(extension)?,
             resolution: extract(resolution)?,
             size: extract(size)?,
@@ -45,7 +45,7 @@ impl fmt::Display for FileFormat {
         write!(
             f,
             "{:6}{:8}{:12}{}",
-            self.code, self.extension, self.resolution, self.size
+            self.itag, self.extension, self.resolution, self.size
         )
     }
 }
