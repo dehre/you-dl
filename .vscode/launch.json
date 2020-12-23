@@ -7,6 +7,24 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Debug executable 'you_dl'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=you_dl",
+                    "--package=you_dl"
+                ],
+                "filter": {
+                    "name": "you_dl",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Debug unit tests in library 'you_dl'",
             "cargo": {
                 "args": [
@@ -22,43 +40,6 @@
             },
             "args": [],
             "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in executable 'cli'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--bin=cli",
-                    "--package=cli"
-                ],
-                "filter": {
-                    "name": "cli",
-                    "kind": "bin"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug executable 'cli'",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--bin=cli",
-                    "--package=cli"
-                ],
-                "filter": {
-                    "name": "cli",
-                    "kind": "bin"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
+        }
     ]
 }
