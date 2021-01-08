@@ -20,7 +20,7 @@ pub mod wrapper;
 pub use models::PlayerResponse;
 pub use models::YouDlError;
 
-// TODO LORIS: add adaptive formats, audios only
+// TODO LORIS: list only formats that contain both video and audio
 
 // TODO LORIS: check this one: https://tyrrrz.me/blog/reverse-engineering-youtube -> add to README.md
 

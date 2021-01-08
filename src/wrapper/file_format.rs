@@ -1,11 +1,12 @@
+use crate::utils::SUFFIXES;
 use crate::YouDlError;
 use std::fmt;
 
 pub struct FileFormat {
     pub itag: String,
-    pub extension: String,
+    pub extension: String, // TODO LORIS: rename file_extension
     pub resolution: String,
-    pub size: String,
+    pub size: String, // TODO LORIS: rename file_size
 }
 
 impl FileFormat {
@@ -21,21 +22,21 @@ impl FileFormat {
         let mut words_iter = line.split_whitespace();
         let (itag, extension, resolution) =
             (words_iter.next(), words_iter.next(), words_iter.next());
-        let size = words_iter.last();
 
-        let extract = |optional_str: Option<&str>| -> Result<String, YouDlError> {
-            optional_str
-                .and_then(|s| Some(String::from(s)))
-                .ok_or(YouDlError::Application(
-                    "failed to parse file_format".to_owned(),
-                ))
-        };
+        let size = words_iter.last();
+        let size = extract_option_str(size).map(|size| {
+            if is_valid_file_size(&size) {
+                size
+            } else {
+                String::new()
+            }
+        })?;
 
         Ok(FileFormat {
-            itag: extract(itag)?,
-            extension: extract(extension)?,
-            resolution: extract(resolution)?,
-            size: extract(size)?,
+            itag: extract_option_str(itag)?,
+            extension: extract_option_str(extension)?,
+            resolution: extract_option_str(resolution)?,
+            size,
         })
     }
 }
@@ -44,27 +45,45 @@ impl fmt::Display for FileFormat {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{:6}{:8}{:12}{}",
+            "{:<6}{:<8}{:<11}{}",
             self.itag, self.extension, self.resolution, self.size
         )
     }
+}
+
+fn extract_option_str(optional_str: Option<&str>) -> Result<String, YouDlError> {
+    optional_str
+        .map(|s| s.to_owned())
+        .ok_or(YouDlError::Application(
+            "failed to parse file_format".to_owned(),
+        ))
+}
+
+fn is_valid_file_size(file_size: &str) -> bool {
+    SUFFIXES.iter().any(|suffix| file_size.ends_with(suffix))
 }
 
 //
 // EXAMPLE FILE FORMATS FROM YOUTUBE-DL
 //
 // format code  extension  resolution note
-// > 249          webm       audio only tiny   43k , opus @ 50k (48000Hz), 47.46KiB
-//   250          webm       audio only tiny   56k , opus @ 70k (48000Hz), 60.53KiB
-//   251          webm       audio only tiny  109k , opus @160k (48000Hz), 118.15KiB
-//   140          m4a        audio only tiny  127k , m4a_dash container, mp4a.40.2@128k (44100Hz), 138.59KiB
-//   160          mp4        256x144    144p   58k , avc1.4d400c, 30fps, video only, 61.01KiB
-//   278          webm       256x144    144p   97k , webm container, vp9, 30fps, video only, 103.89KiB
-//   133          mp4        426x240    240p  216k , avc1.4d4015, 30fps, video only, 228.76KiB
-//   242          webm       426x240    240p  221k , vp9, 30fps, video only, 235.50KiB
-//   134          mp4        640x360    360p  318k , avc1.4d401e, 30fps, video only, 338.08KiB
-//   243          webm       640x360    360p  426k , vp9, 30fps, video only, 456.43KiB
-//   135          mp4        854x480    480p  666k , avc1.4d401f, 30fps, video only, 706.17KiB
-//   244          webm       854x480    480p  789k , vp9, 30fps, video only, 845.16KiB
-//   136          mp4        1280x720   720p 1334k , avc1.4d401f, 30fps, video only, 1.39MiB
-//   247          webm       1280x720   720p 1640k , vp9, 30fps, video only, 1.68MiB
+// 139          m4a        audio only DASH audio   49k , m4a_dash container, mp4a.40.5@ 48k (22050Hz)
+// 251          webm       audio only DASH audio   96k , webm_dash container, opus @160k (48000Hz)
+// 140          m4a        audio only DASH audio  130k , m4a_dash container, mp4a.40.2@128k (44100Hz)
+// 394          mp4        256x144    144p   71k , av01.0.00M.08, 30fps, video only, 132.74KiB
+// 278          webm       256x144    DASH video   95k , webm_dash container, vp9, 30fps, video only
+// 160          mp4        256x144    DASH video  108k , mp4_dash container, avc1.4d400b, 30fps, video only
+// 395          mp4        426x240    240p  151k , av01.0.00M.08, 30fps, video only, 244.46KiB
+// 242          webm       426x240    DASH video  220k , webm_dash container, vp9, 30fps, video only
+// 133          mp4        426x240    DASH video  242k , mp4_dash container, avc1.4d400c, 30fps, video only
+// 396          mp4        640x360    360p  294k , av01.0.01M.08, 30fps, video only, 472.37KiB
+// 243          webm       640x360    DASH video  405k , webm_dash container, vp9, 30fps, video only
+// 397          mp4        854x480    480p  512k , av01.0.04M.08, 30fps, video only, 840.61KiB
+// 134          mp4        640x360    DASH video  594k , mp4_dash container, avc1.4d401e, 30fps, video only
+// 244          webm       854x480    DASH video  752k , webm_dash container, vp9, 30fps, video only
+// 398          mp4        1280x720   720p 1015k , av01.0.05M.08, 30fps, video only, 1.54MiB
+// 135          mp4        854x480    DASH video 1155k , mp4_dash container, avc1.4d4014, 30fps, video only
+// 247          webm       1280x720   DASH video 1505k , webm_dash container, vp9, 30fps, video only
+// 136          mp4        1280x720   DASH video 2310k , mp4_dash container, avc1.4d4016, 30fps, video only
+// 18           mp4        640x360    360p  483k , avc1.42001E, 30fps, mp4a.40.2@ 96k (44100Hz), 1011.71KiB
+// 22           mp4        1280x720   720p 1472k , avc1.64001F, 30fps, mp4a.40.2@192k (44100Hz) (best)

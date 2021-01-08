@@ -24,8 +24,8 @@ async fn async_main() {
             smol::spawn(process_request(
                 url,
                 output_dir,
-                config.use_wrapper,
                 progress_bar,
+                config.use_wrapper,
             ))
         })
         .collect();
@@ -55,8 +55,8 @@ fn create_process_bar(multi_bar: &MultiProgress) -> ProgressBar {
 async fn process_request(
     url: String,
     output_dir: String,
-    use_wrapper: bool,
     progress_bar: ProgressBar,
+    use_wrapper: bool,
 ) -> Result<(), YouDlError> {
     if use_wrapper {
         you_dl::wrapper::process_request(&url, &output_dir).await
