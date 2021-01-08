@@ -20,8 +20,6 @@ pub mod wrapper;
 pub use models::PlayerResponse;
 pub use models::YouDlError;
 
-// TODO LORIS: list only formats that contain both video and audio
-
 // TODO LORIS: check this one: https://tyrrrz.me/blog/reverse-engineering-youtube -> add to README.md
 
 // TODO LORIS: publish to homebrew
@@ -68,7 +66,7 @@ fn ask_preferred_file_format(
     mut download_options: models::DownloadOptions,
 ) -> models::DownloadOption {
     select!(
-        "choose the file format for `{}`:",
+        "choose the file format for: {}",
         download_options.get_title()
     );
     let chosen_index = Select::new()
@@ -78,7 +76,7 @@ fn ask_preferred_file_format(
         .unwrap();
 
     let chosen = download_options.0.remove(chosen_index);
-    info!("chosen itag {} for `{}`", chosen.itag, chosen.title);
+    info!("chosen itag {} for: {}", chosen.itag, chosen.title);
     chosen
 }
 
@@ -94,7 +92,8 @@ async fn download(
     progress_bar.set_length(response.content_length().unwrap_or(u64::MAX));
     progress_bar.set_prefix("Status:"); // Setting the prefix in main will show the bars before the prompt
 
-    let mut output_file = fs::File::create(Path::new(output_dir).join(&download_option.file_name))
+    let file_name = [&*download_option.title, &*download_option.file_extension].join(".");
+    let mut output_file = fs::File::create(Path::new(output_dir).join(file_name))
         .await
         .map_err(|e| YouDlError::Application(e.to_string()))?;
 

@@ -7,11 +7,8 @@ pub struct DownloadOption {
     pub video_id: String,
     pub title: String,
     pub file_extension: String,
-    pub file_name: String,
     pub itag: i32,
     pub url: String,
-    // TODO LORIS: remove quality_label field
-    pub quality_label: String,
     pub file_size: String,
     pub mime_type: String,
     pub width: i32,
@@ -80,10 +77,8 @@ impl TryFrom<PlayerResponse> for DownloadOptions {
                 video_id: (&video_id).to_owned(),
                 title: (&title).to_owned(),
                 file_extension: file_extension.to_owned(),
-                file_name: [&title, file_extension].join("."), // TODO LORIS: remove field
                 itag: format.itag,
                 url,
-                quality_label: format.quality_label,
                 file_size,
                 mime_type: format.mime_type,
                 width: format.width,

@@ -26,9 +26,6 @@ pub struct StreamingData {
 pub struct Format {
     pub itag: i32,
     pub url: Option<String>,
-    // TODO LORIS: remove quality_label field
-    #[serde(rename(deserialize = "qualityLabel"))]
-    pub quality_label: String,
     #[serde(rename(deserialize = "width"))]
     pub width: i32,
     #[serde(rename(deserialize = "height"))]

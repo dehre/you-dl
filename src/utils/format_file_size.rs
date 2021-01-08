@@ -1,8 +1,7 @@
-// TODO LORIS: rename file_size_suffixes
-pub const SUFFIXES: [&str; 6] = ["B", "KiB", "MiB", "GiB", "TiB", "PiB"];
+pub const FILE_SIZE_SUFFIXES: [&str; 6] = ["B", "KiB", "MiB", "GiB", "TiB", "PiB"];
 
 pub fn format_file_size(file_size_bytes: i32) -> String {
-    for (i, &suffix) in SUFFIXES.iter().enumerate() {
+    for (i, &suffix) in FILE_SIZE_SUFFIXES.iter().enumerate() {
         let i = i as u32;
         let lower_bound = i32::pow(1024, i);
         let higher_bound = i32::pow(1024, i + 1);
@@ -11,7 +10,7 @@ pub fn format_file_size(file_size_bytes: i32) -> String {
             return format!("{:.2}{}", val, suffix);
         }
     }
-    format!("{}{}", file_size_bytes, SUFFIXES[0])
+    format!("{}{}", file_size_bytes, FILE_SIZE_SUFFIXES[0])
 }
 
 #[cfg(test)]

@@ -1,12 +1,12 @@
-use crate::utils::SUFFIXES;
+use crate::utils::FILE_SIZE_SUFFIXES;
 use crate::YouDlError;
 use std::fmt;
 
 pub struct FileFormat {
     pub itag: String,
-    pub extension: String, // TODO LORIS: rename file_extension
-    pub resolution: String,
-    pub size: String, // TODO LORIS: rename file_size
+    pub file_extension: String,
+    pub video_resolution: String,
+    pub file_size: String,
 }
 
 impl FileFormat {
@@ -20,11 +20,11 @@ impl FileFormat {
 
     fn parse_line(line: &str) -> Result<FileFormat, YouDlError> {
         let mut words_iter = line.split_whitespace();
-        let (itag, extension, resolution) =
+        let (itag, file_extension, video_resolution) =
             (words_iter.next(), words_iter.next(), words_iter.next());
 
-        let size = words_iter.last();
-        let size = extract_option_str(size).map(|size| {
+        let file_size = words_iter.last();
+        let file_size = extract_option_str(file_size).map(|size| {
             if is_valid_file_size(&size) {
                 size
             } else {
@@ -34,9 +34,9 @@ impl FileFormat {
 
         Ok(FileFormat {
             itag: extract_option_str(itag)?,
-            extension: extract_option_str(extension)?,
-            resolution: extract_option_str(resolution)?,
-            size,
+            file_extension: extract_option_str(file_extension)?,
+            video_resolution: extract_option_str(video_resolution)?,
+            file_size,
         })
     }
 }
@@ -46,7 +46,7 @@ impl fmt::Display for FileFormat {
         write!(
             f,
             "{:<6}{:<8}{:<11}{}",
-            self.itag, self.extension, self.resolution, self.size
+            self.itag, self.file_extension, self.video_resolution, self.file_size
         )
     }
 }
@@ -59,8 +59,11 @@ fn extract_option_str(optional_str: Option<&str>) -> Result<String, YouDlError> 
         ))
 }
 
+// the stdout for `youtube-dl -F <link>` doesn't always specify the file size
 fn is_valid_file_size(file_size: &str) -> bool {
-    SUFFIXES.iter().any(|suffix| file_size.ends_with(suffix))
+    FILE_SIZE_SUFFIXES
+        .iter()
+        .any(|suffix| file_size.ends_with(suffix))
 }
 
 //

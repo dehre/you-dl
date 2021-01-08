@@ -40,7 +40,7 @@ async fn get_available_file_formats(url: &str) -> Result<Vec<FileFormat>, YouDlE
 }
 
 fn ask_preferred_itag(title: &str, available_file_formats: &[FileFormat]) -> String {
-    select!("choose the file format for `{}`:", title);
+    select!("choose the file format for: {}", title);
     let chosen_index = Select::new()
         .items(available_file_formats)
         .default(0)
@@ -51,12 +51,12 @@ fn ask_preferred_itag(title: &str, available_file_formats: &[FileFormat]) -> Str
         .get(chosen_index)
         .map(|file_format| file_format.itag.clone())
         .expect("chosen available itag");
-    info!("chosen itag {} for `{}`", itag, title);
+    info!("chosen itag {} for: {}", itag, title);
     itag
 }
 
 async fn download(url: &str, title: &str, itag: &str, output_dir: &str) -> Result<(), YouDlError> {
-    info!("start downloading `{}`...", title);
+    info!("start downloading: {} ...", title);
     let file_path = format!("{}/%(title)s.%(ext)s", output_dir);
     process::Command::new("youtube-dl")
         .args(&["-f", itag, "-o", &file_path, &url])
@@ -65,7 +65,7 @@ async fn download(url: &str, title: &str, itag: &str, output_dir: &str) -> Resul
         .map_err(|e| YouDlError::YoutubeDl(e.to_string()))
         .and_then(handle_bad_exit_status)?;
 
-    success!("successfully downloaded `{}`", title);
+    success!("successfully downloaded: {}", title);
     Ok(())
 }
 
