@@ -28,7 +28,7 @@ impl FileFormat {
             if is_valid_file_size(&size) {
                 size
             } else {
-                String::new()
+                String::from("unknown")
             }
         })?;
 

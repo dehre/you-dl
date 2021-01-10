@@ -20,10 +20,6 @@ pub mod wrapper;
 pub use models::PlayerResponse;
 pub use models::YouDlError;
 
-// TODO LORIS: check this one: https://tyrrrz.me/blog/reverse-engineering-youtube -> add to README.md
-
-// TODO LORIS: publish to homebrew
-
 pub async fn process_request(
     url: &str,
     output_dir: &str,
@@ -90,7 +86,7 @@ async fn download(
         .await
         .map_err(|e| YouDlError::InvalidResponse(e.to_string()))?;
     progress_bar.set_length(response.content_length().unwrap_or(u64::MAX));
-    progress_bar.set_prefix("Status:"); // Setting the prefix in main will show the bars before the prompt
+    progress_bar.set_prefix("Status:"); // setting the prefix in main, instead, will show the bars before the prompt.
 
     let file_name = [&*download_option.title, &*download_option.file_extension].join(".");
     let mut output_file = fs::File::create(Path::new(output_dir).join(file_name))
