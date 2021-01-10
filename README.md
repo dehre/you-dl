@@ -8,7 +8,8 @@ A tiny and easy to use YouTube downloader.
 Available for macOS:
 
 ```sh
-# TODO
+brew tap l-oris/you-dl
+brew install you-dl
 ```
 
 ## Usage
