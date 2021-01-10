@@ -20,6 +20,8 @@ pub mod wrapper;
 pub use models::PlayerResponse;
 pub use models::YouDlError;
 
+// TODO LORIS: display help if invalid args
+
 pub async fn process_request(
     url: &str,
     output_dir: &str,

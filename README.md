@@ -1,7 +1,7 @@
-# you-dl
+# You Dl
 
 A tiny and easy to use YouTube downloader.
-[todo giphy]
+![](./screen-record.gif)
 
 ## Installation
 
@@ -15,10 +15,22 @@ brew install you-dl
 ## Usage
 
 ```sh
-you-dl <url> <url> <url>
+you-dl <url>...
 
 # read the URLs from a text file (lines starting with `#` and `//` are ignored)
-you-dl -f <path_to_file>
+you-dl --from-file <path_to_file>
+
+# change output directory
+you-dl --output-dir <path_to_dir> <url>...
+```
+
+## Try it out
+
+```sh
+you-dl --output-dir ./Videos \
+    https://www.youtube.com/watch?v=MAlSjtxy5ak \
+    https://www.youtube.com/watch?v=4jOV0gaNKj0 \
+    https://www.youtube.com/watch?v=pVjsCYlc1IY
 ```
 
 ## Limitations
@@ -33,5 +45,5 @@ For this reason, `you-dl` includes a wrapper around [youtube-dl](https://github.
 To trigger this functionality, simply pass the `-w` flag:
 
 ```sh
-you-dl -w <url> <url> <url>
+you-dl -w <url>...
 ```
