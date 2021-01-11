@@ -6,7 +6,7 @@ pub struct ConfigError(pub String);
 
 impl fmt::Display for ConfigError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "invalid program arguments provided: {}", self.0)
+        write!(f, "failed to parse program arguments: {}", self.0)
     }
 }
 

@@ -27,7 +27,8 @@ pub async fn parse() -> Result<Config, ConfigError> {
     }
 
     if raw_cli_args.urls.is_none() && raw_cli_args.from_file_path.is_none() {
-        return Err(ConfigError("no urls to be downloaded".to_owned()));
+        let err_message = ["no urls to be downloaded", &raw_cli_args.help_message].join("\n\n");
+        return Err(ConfigError(err_message));
     };
 
     let mut video_urls = Vec::new();

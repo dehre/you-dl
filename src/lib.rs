@@ -20,7 +20,7 @@ pub mod wrapper;
 pub use models::PlayerResponse;
 pub use models::YouDlError;
 
-// TODO LORIS: display help if invalid args
+// TODO LORIS: publish on apt-get and try on your ubuntu
 
 pub async fn process_request(
     url: &str,
