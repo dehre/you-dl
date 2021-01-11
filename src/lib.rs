@@ -1,12 +1,11 @@
 use async_compat::CompatExt;
 use dialoguer::Select;
 use futures_util::StreamExt;
-use indicatif::ProgressBar;
+use indicatif::{ProgressBar, ProgressStyle};
 use qstring::QString;
 use reqwest;
 use smol::{fs, io};
-use std::convert::TryFrom;
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 use std::path::Path;
 
 // make macros in `log.rs` available to the entire project.
@@ -19,8 +18,6 @@ mod utils;
 pub mod wrapper;
 pub use models::PlayerResponse;
 pub use models::YouDlError;
-
-// TODO LORIS: publish on apt-get and try on your ubuntu
 
 pub async fn process_request(
     url: &str,
@@ -87,8 +84,8 @@ async fn download(
         .compat()
         .await
         .map_err(|e| YouDlError::InvalidResponse(e.to_string()))?;
-    progress_bar.set_length(response.content_length().unwrap_or(u64::MAX));
-    progress_bar.set_prefix("Status:"); // setting the prefix in main, instead, will show the bars before the prompt.
+
+    initialize_progress_bar(&progress_bar, response.content_length().unwrap_or(u64::MAX));
 
     let file_name = [&*download_option.title, &*download_option.file_extension].join(".");
     let mut output_file = fs::File::create(Path::new(output_dir).join(file_name))
@@ -109,4 +106,14 @@ async fn download(
         download_option.title
     ));
     Ok(())
+}
+
+fn initialize_progress_bar(progress_bar: &ProgressBar, len: u64) {
+    progress_bar.set_style(
+        ProgressStyle::default_bar()
+            .template("{prefix:.green} {bar:40.cyan/blue} {percent}% {wide_msg}")
+            .progress_chars("##-"),
+    );
+    progress_bar.set_prefix("Status:");
+    progress_bar.set_length(len);
 }

@@ -1,5 +1,6 @@
-use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
-use std::{process, thread};
+use futures::future;
+use indicatif::{MultiProgress, ProgressBar};
+use std::process;
 use you_dl::{self, YouDlError};
 
 mod config;
@@ -20,7 +21,7 @@ async fn async_main() {
         .map(|url| {
             let url = url.to_owned();
             let output_dir = config.output_dir.clone();
-            let progress_bar = create_process_bar(&multi_bar);
+            let progress_bar = multi_bar.add(ProgressBar::new(0));
             smol::spawn(process_request(
                 url,
                 output_dir,
@@ -30,26 +31,12 @@ async fn async_main() {
         })
         .collect();
 
-    // Waits for all progress bars to report that they are finished.
-    thread::spawn(move || {
-        multi_bar.join().unwrap();
-    });
-
-    for result in futures::future::join_all(smol_tasks).await {
+    multi_bar.join().unwrap(); // request the draw instructions from the remote progress bars
+    for result in future::join_all(smol_tasks).await {
         if let Err(e) = result {
             you_dl::failed!("{}", e)
         }
     }
-}
-
-fn create_process_bar(multi_bar: &MultiProgress) -> ProgressBar {
-    let progress_bar = multi_bar.add(ProgressBar::new(0));
-    progress_bar.set_style(
-        ProgressStyle::default_bar()
-            .template("{prefix:.green} {bar:40.cyan/blue} {percent}% {wide_msg}")
-            .progress_chars("##-"),
-    );
-    progress_bar
 }
 
 async fn process_request(
