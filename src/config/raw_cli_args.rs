@@ -1,5 +1,5 @@
 use super::ConfigError;
-use clap::{App, Arg};
+use clap::{crate_version, App, Arg};
 
 #[derive(Debug)]
 pub struct RawCliArgs {
@@ -17,6 +17,7 @@ const USE_WRAPPER_ARG: &str = "wrapper";
 
 pub fn parse() -> Result<RawCliArgs, ConfigError> {
     let mut app = App::new("you-dl")
+        .version(crate_version!())
         .arg(
             Arg::new(URL_ARG)
                 .value_name("URL")

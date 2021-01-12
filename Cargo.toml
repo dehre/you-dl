@@ -1,9 +1,9 @@
 [package]
-name = "you_dl"
-version = "0.1.0"
+name = "you-dl"
+version = "0.3.0"
 authors = ["L-oris <loris4526@gmail.com>"]
 edition = "2018"
-default-run = "you_dl"
+default-run = "you-dl"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

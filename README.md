@@ -7,11 +7,19 @@ A tiny and easy to use YouTube downloader.
 
 ## Installation
 
-Available for macOS:
+#### On macOS (or Linux) via Homebrew
 
 ```sh
 brew tap l-oris/you-dl
 brew install you-dl
+```
+
+#### On Ubuntu (and other Debian-based Linux distributions)
+
+Download the latest `.deb` package from the [release](https://github.com/l-oris/you-dl/releases) page and install it via:
+
+```sh
+sudo dpkg -i you-dl-amd64.deb
 ```
 
 ## Usage
